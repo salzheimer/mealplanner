@@ -1,0 +1,32 @@
+# Global ignores for the meal planner monorepo
+
+# Visual Studio / .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# NuGet
+*.nupkg
+packages/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+/dist/
+/build/
+
+# Docker
+docker-compose.override.yml
+
+# Environment files
+.env
+
+# MacOS
+.DS_Store

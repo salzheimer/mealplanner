@@ -1,0 +1,39 @@
+
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: mealplanner
+      POSTGRES_PASSWORD: mealPlanner26!
+      POSTGRES_DB: mealplannerdb
+    volumes:
+      - mealplanningdb_data:/var/lib/postgresql/data   # named volume
+      - ../postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+    ports:
+      - "5432:5432"
+
+  # meal-service:
+  #   build: ../../services/MealService/src
+  #   depends_on:
+  #     - postgres
+  #   environment:
+  #     - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=mealplannerdb;Username=mealplanner;Password=password
+
+  # order-service:
+  #   build: ../../services/OrderService/src
+  #   depends_on:
+  #     - postgres
+  #   environment:
+  #     - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=mealplannerdb;Username=mealplanner;Password=password
+
+  # auth-service:
+  #   build: ../../services/AuthService/src
+  #   depends_on:
+  #     - postgres
+  #   environment:
+  #     - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=mealplannerdb;Username=mealplanner;Password=password
+
+volumes:
+  mealplanningdb_data:
+    external: true
