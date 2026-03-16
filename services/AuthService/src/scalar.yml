@@ -1,0 +1,27 @@
+# Scalar contract placeholder for AuthService
+# Add scalar schemas for endpoints and models here.
+# Example:
+# service: AuthService
+# version: 1.0.0
+# paths:
+#   /auth/login:
+#     post:
+#       request:
+#         content:
+#           application/json:
+#             schema: LoginRequest
+#       response:
+#         200:
+#           content:
+#             application/json:
+#               schema: LoginResponse
+
+# Models and schemas can be defined below.
+# models:
+#   LoginRequest:
+#     type: object
+#     properties:
+#       username:
+#         type: string
+#       password:
+#         type: string

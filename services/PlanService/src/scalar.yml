@@ -1,0 +1,25 @@
+# Scalar contract placeholder for PlanService
+# Define paths for planning operations, meal assignments, and analytics.
+# Example:
+# service: PlanService
+# version: 1.0.0
+# paths:
+#   /plans:
+#     get:
+#       query:
+#         - name: userId
+#           type: string
+#       response:
+#         200:
+#           content:
+#             application/json:
+#               schema: PlanListResponse
+
+# models:
+#   PlanListResponse:
+#     type: object
+#     properties:
+#       items:
+#         type: array
+#         items:
+#           $ref: '#/models/Plan'
