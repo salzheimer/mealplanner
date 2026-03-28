@@ -13,16 +13,16 @@ public class UserStore
         AddUser("admin", "P@ssw0rd", "admin@example.com");
     }
 
-    public User? FindByUsername(string username) => _users.FirstOrDefault(u => u.Username == username);
+    public virtual User? FindByUsername(string username) => _users.FirstOrDefault(u => u.Username == username);
 
-    public User AddUser(string username, string password, string? email = null)
+    public virtual User AddUser(string username, string password, string? email = null)
     {
         var user = new User(_nextId++, username, BCrypt.Net.BCrypt.HashPassword(password), email);
         _users.Add(user);
         return user;
     }
 
-    public bool ValidateCredentials(string username, string password)
+    public virtual bool ValidateCredentials(string username, string password)
     {
         var user = FindByUsername(username);
         return user is not null && BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);

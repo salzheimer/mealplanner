@@ -1,4 +1,6 @@
-# Meal Planner Monorepo
+# Meal Planner
+
+The purpose of this project is to create an application to make meal planning easier. Also to practice with AI assisted coding.
 
 This repository contains a meal planner application built with a .NET 10 microservices backend, Postgres database, and a React frontend.
 
@@ -8,16 +10,21 @@ This repository contains a meal planner application built with a .NET 10 microse
 mealplanner/
 ├── services/            # .NET microservices
 │   ├── ApiGateway/      # Optional API gateway (routing + central auth)
-│   │   └── src/
+│   │   ├── src/
+│   │   └── tests/
 │   ├── AuthService/     # JWT auth + user management
-│   │   └── src/
+│   │   ├── src/
+│   │   └── tests/
 │   ├── MealService/     # Recipes, ingredients, meal scheduling
-│   │   └── src/
+│   │   ├── src/
+│   │   └── tests/
 │   └── PlanService/     # Meal planning + meal item assignment
-│       └── src/
+│       ├── src/
+│       └── tests/
 ├── shared/              # Shared DTOs, enums, helpers
 │   ├── Shared.Models/
-│   └── Shared.Services/
+│   ├── Shared.Services/
+│   └── Shared.Tests/
 ├── frontend/            # React application
 │   └── meal-planner-react/
 │       └── src/
@@ -27,20 +34,25 @@ mealplanner/
 │   └── postgres/
 │       └── init.sql
 └── docs/                # Project documentation
+    └── adr/             # Architectural Decision Records
 ```
 
 ## Getting Started
 
 ### Run locally with Docker
-1. Start services:
+1. Create the external volume (once, before first run):
+   ```bash
+   docker volume create mealplanningdb_data
+   ```
+2. Start services:
    ```bash
    docker compose -f infrastructure/docker/docker-compose.yml up --build
    ```
-2. Access services:
-   - AuthService: http://localhost:5001
-   - MealService: http://localhost:5002
-   - PlanService: http://localhost:5003
-   - ApiGateway: http://localhost:5000
+3. Access services:
+   - ApiGateway: http://localhost:5001
+   - AuthService: http://localhost:5002
+   - MealService: http://localhost:5003
+   - PlanService: http://localhost:5004
 
 ### Run a single service (dotnet)
 1. `cd services/AuthService/src`

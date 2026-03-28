@@ -1,0 +1,48 @@
+name: Unit Tests
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  test:
+    name: Run unit tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.x"
+
+      - name: Restore dependencies
+        run: |
+          dotnet restore shared/Shared.Tests/Shared.Tests.csproj
+          dotnet restore services/AuthService/tests/AuthService.Tests/AuthService.Tests.csproj
+          dotnet restore services/MealService/tests/MealService.Tests/MealService.Tests.csproj
+          dotnet restore services/PlanService/tests/PlanService.Tests/PlanService.Tests.csproj
+          dotnet restore services/ApiGateway/tests/ApiGateway.Tests/ApiGateway.Tests.csproj
+        working-directory: mealplanner
+
+      - name: Shared.Tests
+        run: dotnet test shared/Shared.Tests/Shared.Tests.csproj --no-restore --logger "console;verbosity=normal"
+        working-directory: mealplanner
+
+      - name: AuthService.Tests
+        run: dotnet test services/AuthService/tests/AuthService.Tests/AuthService.Tests.csproj --no-restore --logger "console;verbosity=normal"
+        working-directory: mealplanner
+
+      - name: MealService.Tests
+        run: dotnet test services/MealService/tests/MealService.Tests/MealService.Tests.csproj --no-restore --logger "console;verbosity=normal"
+        working-directory: mealplanner
+
+      - name: PlanService.Tests
+        run: dotnet test services/PlanService/tests/PlanService.Tests/PlanService.Tests.csproj --no-restore --logger "console;verbosity=normal"
+        working-directory: mealplanner
+
+      - name: ApiGateway.Tests
+        run: dotnet test services/ApiGateway/tests/ApiGateway.Tests/ApiGateway.Tests.csproj --no-restore --logger "console;verbosity=normal"
+        working-directory: mealplanner
