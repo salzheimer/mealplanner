@@ -10,13 +10,18 @@ jobs:
   test:
     name: Run unit tests
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        working-directory: mealplanner
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.x"
+          
+      - name: Show Current Directory
+        run: pwd
 
       - name: Restore dependencies
         run: |
@@ -25,11 +30,11 @@ jobs:
           dotnet restore services/MealService/tests/MealService.Tests/MealService.Tests.csproj
           dotnet restore services/PlanService/tests/PlanService.Tests/PlanService.Tests.csproj
           dotnet restore services/ApiGateway/tests/ApiGateway.Tests/ApiGateway.Tests.csproj
-        working-directory: mealplanner
+        
 
       - name: Shared.Tests
         run: dotnet test shared/Shared.Tests/Shared.Tests.csproj --no-restore --logger "console;verbosity=normal"
-        working-directory: mealplanner
+       
 
       - name: AuthService.Tests
         run: dotnet test services/AuthService/tests/AuthService.Tests/AuthService.Tests.csproj --no-restore --logger "console;verbosity=normal"
@@ -37,12 +42,12 @@ jobs:
 
       - name: MealService.Tests
         run: dotnet test services/MealService/tests/MealService.Tests/MealService.Tests.csproj --no-restore --logger "console;verbosity=normal"
-        working-directory: mealplanner
+       
 
       - name: PlanService.Tests
         run: dotnet test services/PlanService/tests/PlanService.Tests/PlanService.Tests.csproj --no-restore --logger "console;verbosity=normal"
-        working-directory: mealplanner
+        
 
       - name: ApiGateway.Tests
         run: dotnet test services/ApiGateway/tests/ApiGateway.Tests/ApiGateway.Tests.csproj --no-restore --logger "console;verbosity=normal"
-        working-directory: mealplanner
+        
