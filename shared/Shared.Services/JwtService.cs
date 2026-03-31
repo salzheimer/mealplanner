@@ -2,7 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
-using Shared.Models;
+using Result = Shared.Models.Result<System.Security.Claims.ClaimsPrincipal>;
 
 namespace Shared.Services;
 
@@ -41,9 +41,9 @@ public class JwtService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public ClaimsPrincipal? ValidateToken(string token)
+    public Result ValidateToken(string token)
     {
-        var tokenHandler = new JwtSecurityTokenHandler();
+        var tokenHandler = new JwtSecurityTokenHandler { MapInboundClaims = false };
         var key = Encoding.UTF8.GetBytes(_secret);
 
         var validationParameters = new TokenValidationParameters
@@ -60,11 +60,12 @@ public class JwtService
 
         try
         {
-            return tokenHandler.ValidateToken(token, validationParameters, out _);
+            var principal = tokenHandler.ValidateToken(token, validationParameters, out _);
+            return Result.Success(principal);
         }
-        catch
+        catch (Exception ex)
         {
-            return null;
+            return Result.Failure(ex.Message);
         }
     }
 }

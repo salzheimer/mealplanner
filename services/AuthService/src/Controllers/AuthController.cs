@@ -56,12 +56,12 @@ public class AuthController : ControllerBase
     [HttpPost("validate")]
     public ActionResult Validate([FromBody] string token)
     {
-        var principal = _jwtService.ValidateToken(token);
-        if (principal is null)
+        var result = _jwtService.ValidateToken(token);
+        if (!result.IsSuccess)
         {
             return Unauthorized("Invalid token.");
         }
 
-        return Ok(new { valid = true, claims = principal.Claims.Select(c => new { c.Type, c.Value }) });
+        return Ok(new { valid = true, claims = result.Value!.Claims.Select(c => new { c.Type, c.Value }) });
     }
 }

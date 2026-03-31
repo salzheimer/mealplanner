@@ -1,4 +1,6 @@
 using Shared.Services;
+using System.Security.Claims;
+
 using Xunit;
 
 namespace Shared.Tests;
@@ -21,13 +23,14 @@ public class JwtServiceTests
     }
 
     [Fact]
-    public void ValidateToken_ValidToken_ReturnsPrincipal()
+    public void ValidateToken_ValidToken_ReturnsSuccess()
     {
         var token = _jwtService.GenerateToken(42, "alice", TimeSpan.FromMinutes(60));
 
-        var principal = _jwtService.ValidateToken(token);
+        var result = _jwtService.ValidateToken(token);
 
-        Assert.NotNull(principal);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -35,39 +38,43 @@ public class JwtServiceTests
     {
         var token = _jwtService.GenerateToken(42, "alice", TimeSpan.FromMinutes(60));
 
-        var principal = _jwtService.ValidateToken(token);
+        var result = _jwtService.ValidateToken(token);
 
-        Assert.NotNull(principal);
-        Assert.Equal("42", principal.FindFirst("sub")?.Value);
-        Assert.Equal("alice", principal.FindFirst("unique_name")?.Value);
+        Assert.True(result.IsSuccess);
+        var principal = result.Value!;
+        Assert.True(principal.Identity?.IsAuthenticated);
+        var claimsIdentity = (ClaimsIdentity)principal.Identity!;
+        Assert.Equal("42", claimsIdentity.FindFirst("sub")?.Value);
+        Assert.Equal("alice", claimsIdentity.FindFirst("unique_name")?.Value);
     }
 
     [Fact]
-    public void ValidateToken_InvalidToken_ReturnsNull()
+    public void ValidateToken_InvalidToken_ReturnsFailure()
     {
-        var principal = _jwtService.ValidateToken("not.a.valid.token");
+        var result = _jwtService.ValidateToken("not.a.valid.token");
 
-        Assert.Null(principal);
+        Assert.False(result.IsSuccess);
+        Assert.NotNull(result.Error);
     }
 
     [Fact]
-    public void ValidateToken_ExpiredToken_ReturnsNull()
+    public void ValidateToken_ExpiredToken_ReturnsFailure()
     {
-        var token = _jwtService.GenerateToken(1, "testuser", TimeSpan.FromSeconds(-1));
+        var token = _jwtService.GenerateToken(1, "testuser", TimeSpan.FromMinutes(-2));
 
-        var principal = _jwtService.ValidateToken(token);
+        var result = _jwtService.ValidateToken(token);
 
-        Assert.Null(principal);
+        Assert.False(result.IsSuccess);
     }
 
     [Fact]
-    public void ValidateToken_TokenFromDifferentSecret_ReturnsNull()
+    public void ValidateToken_TokenFromDifferentSecret_ReturnsFailure()
     {
         var otherService = new JwtService("test-issuer", "test-audience", "different-secret-key-32-chars!!!!");
         var token = otherService.GenerateToken(1, "testuser", TimeSpan.FromMinutes(60));
 
-        var principal = _jwtService.ValidateToken(token);
+        var result = _jwtService.ValidateToken(token);
 
-        Assert.Null(principal);
+        Assert.False(result.IsSuccess);
     }
 }
