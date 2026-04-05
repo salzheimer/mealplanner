@@ -28,3 +28,29 @@ public enum ItemStatus
     Pending,
     Confirmed
 }
+
+public enum GroupMemberRole
+{
+    Owner,
+    Member
+}
+
+public enum GroupMemberStatus
+{
+    Pending,
+    Active,
+    Removed
+}
+
+public enum Permission
+{
+    View,
+    Edit
+}
+
+public enum ClientType
+{
+    Web,
+    Mobile,
+    Api
+}

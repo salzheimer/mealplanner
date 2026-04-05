@@ -17,7 +17,7 @@ public class JwtServiceTests
     [Fact]
     public void GenerateToken_ValidInputs_ReturnsNonEmptyString()
     {
-        var token = _jwtService.GenerateToken(1, "testuser", TimeSpan.FromMinutes(60));
+        var token = _jwtService.GenerateToken(1, "testuser@example.com", TimeSpan.FromMinutes(60));
 
         Assert.NotEmpty(token);
     }
@@ -25,7 +25,7 @@ public class JwtServiceTests
     [Fact]
     public void ValidateToken_ValidToken_ReturnsSuccess()
     {
-        var token = _jwtService.GenerateToken(42, "alice", TimeSpan.FromMinutes(60));
+        var token = _jwtService.GenerateToken(42, "alice@example.com", TimeSpan.FromMinutes(60));
 
         var result = _jwtService.ValidateToken(token);
 
@@ -36,7 +36,7 @@ public class JwtServiceTests
     [Fact]
     public void ValidateToken_ValidToken_ContainsExpectedClaims()
     {
-        var token = _jwtService.GenerateToken(42, "alice", TimeSpan.FromMinutes(60));
+        var token = _jwtService.GenerateToken(42, "alice@example.com", TimeSpan.FromMinutes(60));
 
         var result = _jwtService.ValidateToken(token);
 
@@ -45,7 +45,7 @@ public class JwtServiceTests
         Assert.True(principal.Identity?.IsAuthenticated);
         var claimsIdentity = (ClaimsIdentity)principal.Identity!;
         Assert.Equal("42", claimsIdentity.FindFirst("sub")?.Value);
-        Assert.Equal("alice", claimsIdentity.FindFirst("unique_name")?.Value);
+        Assert.Equal("alice@example.com", claimsIdentity.FindFirst("email")?.Value);
     }
 
     [Fact]
@@ -60,7 +60,7 @@ public class JwtServiceTests
     [Fact]
     public void ValidateToken_ExpiredToken_ReturnsFailure()
     {
-        var token = _jwtService.GenerateToken(1, "testuser", TimeSpan.FromMinutes(-2));
+        var token = _jwtService.GenerateToken(1, "testuser@example.com", TimeSpan.FromMinutes(-2));
 
         var result = _jwtService.ValidateToken(token);
 
@@ -71,7 +71,7 @@ public class JwtServiceTests
     public void ValidateToken_TokenFromDifferentSecret_ReturnsFailure()
     {
         var otherService = new JwtService("test-issuer", "test-audience", "different-secret-key-32-chars!!!!");
-        var token = otherService.GenerateToken(1, "testuser", TimeSpan.FromMinutes(60));
+        var token = otherService.GenerateToken(1, "testuser@example.com", TimeSpan.FromMinutes(60));
 
         var result = _jwtService.ValidateToken(token);
 

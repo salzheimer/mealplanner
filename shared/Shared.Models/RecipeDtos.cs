@@ -9,7 +9,23 @@ public record RecipeDto(
     string? OriginalSource,
     TimeSpan? CookTime,
     TimeSpan? PrepTime,
-    int? Servings
+    int? Servings,
+    int? OwnerUserId,
+    Visibility? Visibility
+);
+
+public record RecipeIngredientDto(
+    int Id,
+    string? Name,
+    decimal? Amount,
+    string? MeasurementType
+);
+
+public record RecipeInstructionDto(
+    int Id,
+    int? StepNumber,
+    string? Description,
+    string? Note
 );
 
 public record RecipeCreateDto(
@@ -20,7 +36,8 @@ public record RecipeCreateDto(
     string? OriginalSource,
     TimeSpan? CookTime,
     TimeSpan? PrepTime,
-    int? Servings
+    int? Servings,
+    Visibility? Visibility
 );
 
 public record RecipeUpdateDto(
@@ -31,5 +48,6 @@ public record RecipeUpdateDto(
     string? OriginalSource,
     TimeSpan? CookTime,
     TimeSpan? PrepTime,
-    int? Servings
+    int? Servings,
+    Visibility? Visibility
 );

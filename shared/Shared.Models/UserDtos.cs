@@ -2,18 +2,18 @@ namespace Shared.Models;
 
 public record UserDto(
     int Id,
-    string Username,
+    string DisplayName,
     string Email
 );
 
 public record RegisterRequest(
-    string Username,
+    
+    string Email,
     string Password,
-    string? Email
+    string? DisplayName = null
 );
-
 public record LoginRequest(
-    string Username,
+    string Email,
     string Password
 );
 

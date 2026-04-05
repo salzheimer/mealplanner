@@ -2,6 +2,7 @@ using AuthService.Controllers;
 using AuthService.Models;
 using AuthService.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi;
 using Moq;
 using Shared.Models;
 using Shared.Services;
@@ -27,7 +28,7 @@ public class AuthControllerTests
     // --- Register ---
 
     [Fact]
-    public void Register_EmptyUsername_ReturnsBadRequest()
+    public void Register_EmptyEmail_ReturnsBadRequest()
     {
         var request = new RegisterRequest("", "password123", null);
 
@@ -39,7 +40,7 @@ public class AuthControllerTests
     [Fact]
     public void Register_EmptyPassword_ReturnsBadRequest()
     {
-        var request = new RegisterRequest("alice", "", null);
+        var request = new RegisterRequest("alice@example.com", "", null);
 
         var result = _controller.Register(request);
 
@@ -49,10 +50,10 @@ public class AuthControllerTests
     [Fact]
     public void Register_UserAlreadyExists_ReturnsConflict()
     {
-        var existingUser = new User(1, "alice", "hashedpw", null);
-        _userStore.Setup(s => s.FindByUsername("alice")).Returns(existingUser);
+        var existingUser = new User(1, "alice@example.com", "alice");
+        _userStore.Setup(s => s.FindByEmail("alice@example.com")).Returns(existingUser);
 
-        var request = new RegisterRequest("alice", "password123", null);
+        var request = new RegisterRequest("alice@example.com", "password123", "alice");
         var result = _controller.Register(request);
 
         Assert.IsType<ConflictObjectResult>(result.Result);
@@ -61,11 +62,11 @@ public class AuthControllerTests
     [Fact]
     public void Register_ValidNewUser_ReturnsOkWithToken()
     {
-        _userStore.Setup(s => s.FindByUsername("alice")).Returns((User?)null);
-        _userStore.Setup(s => s.AddUser("alice", "password123", null))
-                  .Returns(new User(2, "alice", "hashedpw", null));
+        _userStore.Setup(s => s.FindByEmail("alice@example.com")).Returns((User?)null);
+        _userStore.Setup(s => s.AddUser( "alice@example.com","password123",  null))
+                  .Returns(new User(2, "alice@example.com",  "hashedpw",null));
 
-        var request = new RegisterRequest("alice", "password123", null);
+        var request = new RegisterRequest("alice@example.com", "password123", null);
         var result = _controller.Register(request);
 
         var ok = Assert.IsType<OkObjectResult>(result.Result);
@@ -79,9 +80,9 @@ public class AuthControllerTests
     [Fact]
     public void Login_InvalidCredentials_ReturnsUnauthorized()
     {
-        _userStore.Setup(s => s.ValidateCredentials("alice", "wrongpassword")).Returns(false);
+        _userStore.Setup(s => s.ValidateCredentials("alice@example.com", "wrongpassword")).Returns(false);
 
-        var request = new LoginRequest("alice", "wrongpassword");
+        var request = new LoginRequest("alice@example.com", "wrongpassword");
         var result = _controller.Login(request);
 
         Assert.IsType<UnauthorizedObjectResult>(result.Result);
@@ -90,11 +91,11 @@ public class AuthControllerTests
     [Fact]
     public void Login_ValidCredentials_ReturnsOkWithToken()
     {
-        _userStore.Setup(s => s.ValidateCredentials("alice", "password123")).Returns(true);
-        _userStore.Setup(s => s.FindByUsername("alice"))
-                  .Returns(new User(2, "alice", "hashedpw", null));
+        _userStore.Setup(s => s.ValidateCredentials("alice@example.com", "password123")).Returns(true);
+        _userStore.Setup(s => s.FindByEmail("alice@example.com"))
+                  .Returns(new User(2, "alice@example.com", "hashedpw",null));
 
-        var request = new LoginRequest("alice", "password123");
+        var request = new LoginRequest("alice@example.com", "password123");
         var result = _controller.Login(request);
 
         var ok = Assert.IsType<OkObjectResult>(result.Result);
@@ -115,7 +116,7 @@ public class AuthControllerTests
     [Fact]
     public void Validate_ValidToken_ReturnsOk()
     {
-        var token = _jwtService.GenerateToken(1, "alice", TimeSpan.FromMinutes(60));
+        var token = _jwtService.GenerateToken(1, "alice@example.com", TimeSpan.FromMinutes(60));
 
         var result = _controller.Validate(token);
 

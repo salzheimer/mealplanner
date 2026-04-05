@@ -19,7 +19,7 @@ public class JwtService
         _secret = secret;
     }
 
-    public string GenerateToken(int userId, string username, TimeSpan expiresIn)
+    public string GenerateToken(int userId, string email, TimeSpan expiresIn)
     {
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secret));
         var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
@@ -27,7 +27,7 @@ public class JwtService
         var claims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
-            new Claim(JwtRegisteredClaimNames.UniqueName, username),
+            new Claim(JwtRegisteredClaimNames.Email, email),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 

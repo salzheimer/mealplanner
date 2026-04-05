@@ -23,18 +23,18 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public ActionResult<LoginResponse> Register([FromBody] RegisterRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
+        if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
         {
-            return BadRequest("Username and password are required.");
+            return BadRequest("Email and password are required.");
         }
 
-        if (_userStore.FindByUsername(request.Username) is not null)
+        if (_userStore.FindByEmail(request.Email) is not null)
         {
             return Conflict("User already exists.");
         }
 
-        var user = _userStore.AddUser(request.Username, request.Password, request.Email);
-        var token = _jwtService.GenerateToken(user.Id, user.Username, TimeSpan.FromMinutes(_jwtSettings.ExpiresMinutes));
+        var user = _userStore.AddUser(request.Email, request.Password, request.DisplayName);
+        var token = _jwtService.GenerateToken(user.Id, user.Email, TimeSpan.FromMinutes(_jwtSettings.ExpiresMinutes));
 
         return Ok(new LoginResponse(token, "Bearer", _jwtSettings.ExpiresMinutes * 60));
     }
@@ -42,14 +42,13 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public ActionResult<LoginResponse> Login([FromBody] LoginRequest request)
     {
-        if (!_userStore.ValidateCredentials(request.Username, request.Password))
+        if (!_userStore.ValidateCredentials(request.Email, request.Password))
         {
             return Unauthorized("Invalid credentials.");
         }
 
-        var user = _userStore.FindByUsername(request.Username)!;
-        var token = _jwtService.GenerateToken(user.Id, user.Username, TimeSpan.FromMinutes(_jwtSettings.ExpiresMinutes));
-
+        var user = _userStore.FindByEmail(request.Email)!;
+        var token = _jwtService.GenerateToken(user.Id, user.Email, TimeSpan.FromMinutes(_jwtSettings.ExpiresMinutes)); 
         return Ok(new LoginResponse(token, "Bearer", _jwtSettings.ExpiresMinutes * 60));
     }
 
