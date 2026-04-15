@@ -114,7 +114,9 @@ CREATE TABLE IF NOT EXISTS recipe (
     prep_time TIME,
     servings INT,
     owner_user_id INT REFERENCES users(id),
-    visibility visibility_enum
+    visibility visibility_enum,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- recipe instructions

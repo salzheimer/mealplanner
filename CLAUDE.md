@@ -17,10 +17,10 @@ docker compose -f mealplanner/infrastructure/docker/docker-compose.yml up --buil
 
 ### Build a single service locally
 ```bash
-dotnet build mealplanner/services/PlanService/src/src.csproj
-dotnet build mealplanner/services/MealService/src/src.csproj
-dotnet build mealplanner/services/AuthService/src/src.csproj
-dotnet build mealplanner/services/ApiGateway/src/src.csproj
+dotnet build mealplanner/services/PlanService/src/PlanService.csproj
+dotnet build mealplanner/services/MealService/src/MealService.csproj
+dotnet build mealplanner/services/AuthService/src/AuthService.csproj
+dotnet build mealplanner/services/ApiGateway/src/ApiGateway.csproj
 ```
 
 ### Run a single service locally

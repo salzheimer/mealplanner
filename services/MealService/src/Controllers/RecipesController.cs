@@ -23,4 +23,11 @@ public class RecipesController : ControllerBase
         // TODO: Replace with real data access
         return NotFound();
     }
+    [HttpPost]
+    [Authorize]
+    public ActionResult<RecipeDto> Create(RecipeDto recipe)
+    {
+        // TODO: Replace with real data access
+        return CreatedAtAction(nameof(GetById), new { id = recipe.Id }, recipe);
+    }
 }

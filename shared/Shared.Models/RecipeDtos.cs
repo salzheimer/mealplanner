@@ -11,7 +11,9 @@ public record RecipeDto(
     TimeSpan? PrepTime,
     int? Servings,
     int? OwnerUserId,
-    Visibility? Visibility
+    Visibility? Visibility,
+    IEnumerable<RecipeIngredientDto>? Ingredients,
+    IEnumerable<RecipeInstructionDto>? Instructions
 );
 
 public record RecipeIngredientDto(
