@@ -1,7 +1,7 @@
-# Scalar contract placeholder for AuthService
+# Scalar contract placeholder for IdentityService
 # Add scalar schemas for endpoints and models here.
 # Example:
-# service: AuthService
+# service: IdentityService
 # version: 1.0.0
 # paths:
 #   /auth/login:

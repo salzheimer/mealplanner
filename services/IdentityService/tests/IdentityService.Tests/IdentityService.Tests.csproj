@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\AuthService.csproj" />
+    <ProjectReference Include="..\..\src\IdentityService.csproj" />
   </ItemGroup>
 
 </Project>

@@ -5,7 +5,17 @@ public record UserDto(
     string DisplayName,
     string Email
 );
-
+public record CreateUserDto(
+    string Email,
+    string Password,
+    string DisplayName
+    
+);
+public record UserResponseDto(
+    int Id,
+    string Email,
+    string DisplayName
+);
 public record RegisterRequest(
     
     string Email,

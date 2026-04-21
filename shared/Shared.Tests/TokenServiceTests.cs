@@ -5,19 +5,19 @@ using Xunit;
 
 namespace Shared.Tests;
 
-public class JwtServiceTests
+public class TokenServiceTests
 {
-    private readonly JwtService _jwtService;
+    private readonly TokenService _TokenService;
 
-    public JwtServiceTests()
+    public TokenServiceTests()
     {
-        _jwtService = new JwtService("test-issuer", "test-audience", "test-secret-key-must-be-32-chars!!");
+        _TokenService = new TokenService("test-issuer", "test-audience", "test-secret-key-must-be-32-chars!!");
     }
 
     [Fact]
     public void GenerateToken_ValidInputs_ReturnsNonEmptyString()
     {
-        var token = _jwtService.GenerateToken(1, "testuser@example.com", TimeSpan.FromMinutes(60));
+        var token = _TokenService.GenerateToken(1, "testuser@example.com", TimeSpan.FromMinutes(60));
 
         Assert.NotEmpty(token);
     }
@@ -25,9 +25,9 @@ public class JwtServiceTests
     [Fact]
     public void ValidateToken_ValidToken_ReturnsSuccess()
     {
-        var token = _jwtService.GenerateToken(42, "alice@example.com", TimeSpan.FromMinutes(60));
+        var token = _TokenService.GenerateToken(42, "alice@example.com", TimeSpan.FromMinutes(60));
 
-        var result = _jwtService.ValidateToken(token);
+        var result = _TokenService.ValidateToken(token);
 
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Value);
@@ -36,9 +36,9 @@ public class JwtServiceTests
     [Fact]
     public void ValidateToken_ValidToken_ContainsExpectedClaims()
     {
-        var token = _jwtService.GenerateToken(42, "alice@example.com", TimeSpan.FromMinutes(60));
+        var token = _TokenService.GenerateToken(42, "alice@example.com", TimeSpan.FromMinutes(60));
 
-        var result = _jwtService.ValidateToken(token);
+        var result = _TokenService.ValidateToken(token);
 
         Assert.True(result.IsSuccess);
         var principal = result.Value!;
@@ -51,7 +51,7 @@ public class JwtServiceTests
     [Fact]
     public void ValidateToken_InvalidToken_ReturnsFailure()
     {
-        var result = _jwtService.ValidateToken("not.a.valid.token");
+        var result = _TokenService.ValidateToken("not.a.valid.token");
 
         Assert.False(result.IsSuccess);
         Assert.NotNull(result.Error);
@@ -60,9 +60,9 @@ public class JwtServiceTests
     [Fact]
     public void ValidateToken_ExpiredToken_ReturnsFailure()
     {
-        var token = _jwtService.GenerateToken(1, "testuser@example.com", TimeSpan.FromMinutes(-2));
+        var token = _TokenService.GenerateToken(1, "testuser@example.com", TimeSpan.FromMinutes(-2));
 
-        var result = _jwtService.ValidateToken(token);
+        var result = _TokenService.ValidateToken(token);
 
         Assert.False(result.IsSuccess);
     }
@@ -70,10 +70,10 @@ public class JwtServiceTests
     [Fact]
     public void ValidateToken_TokenFromDifferentSecret_ReturnsFailure()
     {
-        var otherService = new JwtService("test-issuer", "test-audience", "different-secret-key-32-chars!!!!");
+        var otherService = new TokenService("test-issuer", "test-audience", "different-secret-key-32-chars!!!!");
         var token = otherService.GenerateToken(1, "testuser@example.com", TimeSpan.FromMinutes(60));
 
-        var result = _jwtService.ValidateToken(token);
+        var result = _TokenService.ValidateToken(token);
 
         Assert.False(result.IsSuccess);
     }

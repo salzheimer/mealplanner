@@ -21,7 +21,7 @@ services:
   auth-service:
     build:
       context: ../..
-      dockerfile: services/AuthService/src/Dockerfile
+      dockerfile: services/IdentityService/src/Dockerfile
     depends_on:
       postgres:
         condition: service_healthy

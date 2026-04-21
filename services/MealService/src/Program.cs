@@ -15,7 +15,7 @@ builder.Services.AddEndpointsApiExplorer();
 // Configuration
 builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>() ?? new JwtSettings(
-    Issuer: "AuthService",
+    Issuer: "IdentityService",
     Audience: "MealPlanner",
     Secret: "replace-this-with-a-secure-key",
     ExpiresMinutes: 60);

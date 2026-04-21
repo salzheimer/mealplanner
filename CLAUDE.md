@@ -1,6 +1,6 @@
 # Meal Planning Microservices
 
-.NET 10 microservices system for meal planning. Services communicate over HTTP via Docker Compose DNS. JWT authentication is issued by AuthService and validated by downstream services.
+.NET 10 microservices system for meal planning. Services communicate over HTTP via Docker Compose DNS. JWT authentication is issued by IdentityService and validated by downstream services.
 
 ---
 
@@ -19,7 +19,7 @@ docker compose -f mealplanner/infrastructure/docker/docker-compose.yml up --buil
 ```bash
 dotnet build mealplanner/services/PlanService/src/PlanService.csproj
 dotnet build mealplanner/services/MealService/src/MealService.csproj
-dotnet build mealplanner/services/AuthService/src/AuthService.csproj
+dotnet build mealplanner/services/IdentityService/src/IdentityService.csproj
 dotnet build mealplanner/services/ApiGateway/src/ApiGateway.csproj
 ```
 
@@ -67,12 +67,12 @@ mealplanner/
 │       └── init.sql                 # Authoritative DB schema
 ├── services/
 │   ├── ApiGateway/src/              # Routes requests, no DB connection
-│   ├── AuthService/src/             # JWT issuance, user registration/login
+│   ├── IdentityService/src/             # JWT issuance, user registration/login
 │   ├── MealService/src/             # Recipes, ingredients, meal scheduling
 │   └── PlanService/src/             # Meal plans and meal item tracking
 └── shared/
     ├── Shared.Models/               # DTOs, enums, JwtSettings record
-    ├── Shared.Services/             # JwtService, UserStore
+    ├── Shared.Services/             # TokenService, UserService
     └── Shared.Tests/
 ```
 
@@ -80,7 +80,7 @@ mealplanner/
 
 ## Architecture
 
-- **AuthService** issues JWT tokens. All other services validate JWTs using Bearer auth middleware configured with the same `JwtSettings`.
+- **IdentityService** issues JWT tokens. All other services validate JWTs using Bearer auth middleware configured with the same `JwtSettings`.
 - **ApiGateway** proxies to downstream services. It does not connect to the database.
 - **MealService** and **PlanService** connect to postgres via `ConnectionStrings__Postgres` (injected via docker-compose environment).
 - Services discover each other by Docker Compose service name (e.g. `http://meal-service/api/recipes`).

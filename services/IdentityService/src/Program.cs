@@ -1,7 +1,9 @@
 using Shared.Models;
 using Shared.Services;
-using AuthService.Services;
+using IdentityService.Services;
+using IdentityService.Repositories;
 using Scalar.AspNetCore;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,16 +20,24 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>() ?? new JwtSettings(
-    Issuer: "AuthService",
+    Issuer: "IdentityService",
     Audience: "MealPlanner",
-    Secret: "replace-this-with-a-secure-key",
+    Secret: "replace-this-with-a-secure-key-this-is-for-demo-use-only",
     ExpiresMinutes: 60);
 
 builder.Services.AddSingleton(jwtSettings);
-builder.Services.AddSingleton(new JwtService(jwtSettings.Issuer, jwtSettings.Audience, jwtSettings.Secret));
+builder.Services.AddSingleton(new TokenService(jwtSettings.Issuer, jwtSettings.Audience, jwtSettings.Secret));
 
 // In-memory user store
-builder.Services.AddSingleton<UserStore>();
+
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserCredentialsRepository, UserCredentialsRepository>();
+builder.Services.AddScoped<IUserService, UserService>();
+
+
+//Database
+var conn = builder.Configuration.GetConnectionString("Postgres");
+builder.Services.AddDbContext<UserContext>(options=>options.UseNpgsql(conn));
 
 var app = builder.Build();
 

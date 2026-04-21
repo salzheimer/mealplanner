@@ -17,8 +17,8 @@ CREATE TYPE client_type_enum AS ENUM ('web', 'mobile', 'api');
 -- users
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
-    display_name TEXT NOT NULL,
-    email TEXT,
+    display_name TEXT,
+    email TEXT NOT NULL,
     email_verified BOOLEAN NOT NULL DEFAULT FALSE,
     email_verified_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

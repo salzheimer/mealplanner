@@ -2,17 +2,18 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
+using Shared.Models;
 using Result = Shared.Models.Result<System.Security.Claims.ClaimsPrincipal>;
 
 namespace Shared.Services;
 
-public class JwtService
+public class TokenService
 {
     private readonly string _issuer;
     private readonly string _audience;
     private readonly string _secret;
 
-    public JwtService(string issuer, string audience, string secret)
+    public TokenService(string issuer, string audience, string secret)
     {
         _issuer = issuer;
         _audience = audience;
@@ -65,7 +66,7 @@ public class JwtService
         }
         catch (Exception ex)
         {
-            return Result.Failure(ex.Message);
+            return Result.Failure(new Error("Token.Failure",ex.Message));
         }
     }
 }
