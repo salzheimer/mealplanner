@@ -18,7 +18,7 @@ docker compose -f mealplanner/infrastructure/docker/docker-compose.yml up --buil
 ### Build a single service locally
 ```bash
 dotnet build mealplanner/services/PlanService/src/PlanService.csproj
-dotnet build mealplanner/services/MealService/src/MealService.csproj
+dotnet build mealplanner/services/MealRecipeService/src/MealRecipeService.csproj
 dotnet build mealplanner/services/IdentityService/src/IdentityService.csproj
 dotnet build mealplanner/services/ApiGateway/src/ApiGateway.csproj
 ```
@@ -68,7 +68,7 @@ mealplanner/
 ├── services/
 │   ├── ApiGateway/src/              # Routes requests, no DB connection
 │   ├── IdentityService/src/             # JWT issuance, user registration/login
-│   ├── MealService/src/             # Recipes, ingredients, meal scheduling
+│   ├── MealRecipeService/src/             # Recipes, ingredients, meal scheduling
 │   └── PlanService/src/             # Meal plans and meal item tracking
 └── shared/
     ├── Shared.Models/               # DTOs, enums, JwtSettings record
@@ -82,7 +82,7 @@ mealplanner/
 
 - **IdentityService** issues JWT tokens. All other services validate JWTs using Bearer auth middleware configured with the same `JwtSettings`.
 - **ApiGateway** proxies to downstream services. It does not connect to the database.
-- **MealService** and **PlanService** connect to postgres via `ConnectionStrings__Postgres` (injected via docker-compose environment).
+- **MealRecipeService** and **PlanService** connect to postgres via `ConnectionStrings__Postgres` (injected via docker-compose environment).
 - Services discover each other by Docker Compose service name (e.g. `http://meal-service/api/recipes`).
 - All services expose `GET /health` returning `{ "status": "Healthy" }`.
 

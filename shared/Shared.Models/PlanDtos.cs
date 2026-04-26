@@ -15,28 +15,29 @@ public record PlanCreateDto(
     int? GroupId
 );
 
-public record MealDto(
+public record MealPlanDto(
     int Id,
-    MealType? MealType,
-    bool? IsMultiDayMeal,
-    DateOnly? Date,
-    DateOnly? EndDate,
-    int PlanId
-);
-
-public record MealCreateDto(
-    MealType? MealType,
-    bool? IsMultiDayMeal,
-    DateOnly? Date,
-    DateOnly? EndDate,
-    int PlanId
-);
-
-public record MealItemDto(
-    int Id,
-    string? Name,
     int MealId,
-    int? RecipeId,
+    int PlanId,
+    DateOnly? SearveDate,
+    DateOnly? EndDate,
+    int AddedByUserId,
+    DateTimeOffset CreatedAt
+);
+
+public record MealPlanCreateDto(
+    int MealId,
+    int PlanId,
+    DateOnly? SearveDate,
+    DateOnly? EndDate,
+    int AddedByUserId
+);
+
+public record MealItemPlanDto(
+    int Id,
+
+    int MealPlanId,
+    int? MealItemId,
     ItemType? ItemType,
     string? AssignedToGuestName,
     int? AssignedToUser,
@@ -46,11 +47,10 @@ public record MealItemDto(
     DateTimeOffset UpdatedAt
 );
 
-public record MealItemCreateDto(
-    string? Name,
-    int MealId,
-    int? RecipeId,
-    ItemType? ItemType,
+public record MealItemPlanCreateDto(
+
+    int MealPlanId,
+    int? MealItemId,
     string? AssignedToGuestName,
     int? AssignedToUser,
     ItemStatus? Status,

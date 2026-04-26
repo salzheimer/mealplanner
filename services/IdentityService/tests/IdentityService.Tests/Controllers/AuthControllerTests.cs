@@ -1,6 +1,7 @@
 using IdentityService.Controllers;
 using IdentityService.Models;
 using IdentityService.Services;
+using IdentityService.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Shared.Models;

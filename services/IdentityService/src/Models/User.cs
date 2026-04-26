@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace IdentityService.Models;
 
-[Table("users")]
+[Table("user")]
 public class User
 {
    public User(string email,string? displayName)

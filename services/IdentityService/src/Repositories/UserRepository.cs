@@ -3,7 +3,7 @@ using IdentityService.Models;
 
 namespace IdentityService.Repositories;
 
-public partial class UserRepository : IUserRepository
+public partial class UserRepository : Interfaces.IUserRepository
 {
     private readonly UserContext _context;
 

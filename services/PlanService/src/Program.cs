@@ -1,5 +1,7 @@
 using Shared.Models;
 using Scalar.AspNetCore;
+using Microsoft.EntityFrameworkCore;
+using PlanService.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,7 +19,7 @@ builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnCh
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>() ?? new JwtSettings(
     Issuer: "IdentityService",
     Audience: "MealPlanner",
-    Secret: "replace-this-with-a-secure-key",
+    Secret: "replace-this-with-a-secure-key-this-is-for-demo-use-only",
     ExpiresMinutes: 60);
 
 builder.Services.AddSingleton(jwtSettings);
@@ -40,6 +42,13 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwtSettings.Secret))
     };
 });
+
+builder.Services.AddScoped<IPlanRepository, PlanRepository>();  
+
+
+//Database
+var conn = builder.Configuration.GetConnectionString("Postgres");
+builder.Services.AddDbContext<PlanContext>(options=>options.UseNpgsql(conn));
 
 var app = builder.Build();
 

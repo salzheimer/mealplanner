@@ -24,7 +24,7 @@ jobs:
         run: |
           dotnet restore shared/Shared.Tests/Shared.Tests.csproj
           dotnet restore services/IdentityService/tests/IdentityService.Tests/IdentityService.Tests.csproj
-          dotnet restore services/MealService/tests/MealService.Tests/MealService.Tests.csproj
+          dotnet restore services/MealRecipeService/tests/MealRecipeService.Tests/MealRecipeService.Tests.csproj
           dotnet restore services/PlanService/tests/PlanService.Tests/PlanService.Tests.csproj
           dotnet restore services/ApiGateway/tests/ApiGateway.Tests/ApiGateway.Tests.csproj
         
@@ -35,8 +35,8 @@ jobs:
       - name: IdentityService.Tests
         run: dotnet test services/IdentityService/tests/IdentityService.Tests/IdentityService.Tests.csproj --no-restore --logger "console;verbosity=normal"
 
-      - name: MealService.Tests
-        run: dotnet test services/MealService/tests/MealService.Tests/MealService.Tests.csproj --no-restore --logger "console;verbosity=normal"
+      - name: MealRecipeService.Tests
+        run: dotnet test services/MealRecipeService/tests/MealRecipeService.Tests/MealRecipeService.Tests.csproj --no-restore --logger "console;verbosity=normal"
 
       - name: PlanService.Tests
         run: dotnet test services/PlanService/tests/PlanService.Tests/PlanService.Tests.csproj --no-restore --logger "console;verbosity=normal"

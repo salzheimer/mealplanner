@@ -1,0 +1,25 @@
+# Scalar contract placeholder for MealRecipeService
+# Define paths for recipes, meals, search, etc.
+# Example:
+# service: MealRecipeService
+# version: 1.0.0
+# paths:
+#   /recipes:
+#     get:
+#       query:
+#         - name: search
+#           type: string
+#       response:
+#         200:
+#           content:
+#             application/json:
+#               schema: RecipeListResponse
+
+# models:
+#   RecipeListResponse:
+#     type: object
+#     properties:
+#       items:
+#         type: array
+#         items:
+#           $ref: '#/models/Recipe'

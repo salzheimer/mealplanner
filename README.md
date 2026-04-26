@@ -15,7 +15,7 @@ mealplanner/
 │   ├── IdentityService/     # JWT auth + user management
 │   │   ├── src/
 │   │   └── tests/
-│   ├── MealService/     # Recipes, ingredients, meal scheduling
+│   ├── MealRecipeService/     # Recipes, ingredients, meal scheduling
 │   │   ├── src/
 │   │   └── tests/
 │   └── PlanService/     # Meal planning + meal item assignment
@@ -51,7 +51,7 @@ mealplanner/
 3. Access services:
    - ApiGateway: http://localhost:5001
    - IdentityService: http://localhost:5002
-   - MealService: http://localhost:5003
+   - MealRecipeService: http://localhost:5003
    - PlanService: http://localhost:5004
 
 ### Run a single service (dotnet)

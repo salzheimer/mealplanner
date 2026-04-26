@@ -1,16 +1,11 @@
 using System.IO.Pipelines;
-using IdentityService.Repositories;
+using IdentityService.Interfaces;
 using IdentityService.Models;
 using Shared.Models;
 
 namespace IdentityService.Services;
 
-public interface IUserService
-{
-    Task<Result<UserResponseDto>> CreateUserAsync(CreateUserDto userDto);
-    Task<Result<UserResponseDto?>> FindByEmail(string email);
-    Task<bool> ValidateCredentials(string email, string password);
-}
+
 public class UserService : IUserService
 {
 
@@ -45,7 +40,7 @@ public class UserService : IUserService
         );
        
         await _credentialsRepository.CreateCredentials(credential);
-        var response = new UserResponseDto(user.Id, user.Email, user.DisplayName);
+        var response = new UserResponseDto(user.Id, user.Email, String.IsNullOrEmpty(user.DisplayName) ? string.Empty : user.DisplayName);
         return Result<UserResponseDto>.Success(response);
     }
 
@@ -54,7 +49,7 @@ public class UserService : IUserService
 
         var user = await _userRepository.GetUser(email);
         if (user is null) return null;
-        return Result<UserResponseDto?>.Success(new UserResponseDto(user.Id, user.Email, user.DisplayName));
+        return Result<UserResponseDto?>.Success(new UserResponseDto(user.Id, user.Email, string.IsNullOrEmpty(user.DisplayName) ? string.Empty : user.DisplayName));
     }
 
     public async Task<bool> ValidateCredentials(string email, string password)

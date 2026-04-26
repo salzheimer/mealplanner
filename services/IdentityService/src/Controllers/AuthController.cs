@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 using IdentityService.Models;
+using IdentityService.Interfaces;
 using System.Reflection.Metadata;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel;

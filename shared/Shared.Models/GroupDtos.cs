@@ -22,21 +22,3 @@ public record GroupMemberDto(
     GroupMemberStatus Status
 );
 
-public record RecipeShareDto(
-    int Id,
-    int RecipeId,
-    int? SharedWithUserId,
-    int? SharedWithGroupId,
-    Permission Permission,
-    int SharedByUserId,
-    DateTimeOffset CreatedAt,
-    DateTimeOffset? ExpiresAt
-);
-
-public record RecipeShareCreateDto(
-    int RecipeId,
-    int? SharedWithUserId,
-    int? SharedWithGroupId,
-    Permission Permission,
-    DateTimeOffset? ExpiresAt
-);

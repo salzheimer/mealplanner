@@ -2,6 +2,7 @@ using Shared.Models;
 using Shared.Services;
 using IdentityService.Services;
 using IdentityService.Repositories;
+using IdentityService.Interfaces;
 using Scalar.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 

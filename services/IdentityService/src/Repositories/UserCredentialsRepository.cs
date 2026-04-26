@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using IdentityService.Models;
 
 namespace IdentityService.Repositories;
-public partial class UserCredentialsRepository:IUserCredentialsRepository
+public partial class UserCredentialsRepository:Interfaces.IUserCredentialsRepository
 {
      private readonly UserContext _context;
 

@@ -40,7 +40,7 @@ services:
   meal-service:
     build:
       context: ../..
-      dockerfile: services/MealService/src/Dockerfile
+      dockerfile: services/MealRecipeService/src/Dockerfile
     depends_on:
       postgres:
         condition: service_healthy
