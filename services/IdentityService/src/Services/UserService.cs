@@ -52,12 +52,19 @@ public class UserService : IUserService
         return Result<UserResponseDto?>.Success(new UserResponseDto(user.Id, user.Email, string.IsNullOrEmpty(user.DisplayName) ? string.Empty : user.DisplayName));
     }
 
+    public async Task<Result<UserResponseDto?>> FindById(int id)
+    {
+        var user = await _userRepository.GetUser(id);
+        if (user is null) return Result<UserResponseDto?>.Failure(UserErrors.NotFound);
+        return Result<UserResponseDto?>.Success(new UserResponseDto(user.Id, user.Email, string.IsNullOrEmpty(user.DisplayName) ? string.Empty : user.DisplayName));
+    }
+
     public async Task<bool> ValidateCredentials(string email, string password)
     {
-        var user = FindByEmail(email);
-        if (user is null) return false;
+        var userResult = await FindByEmail(email);
+        if (!userResult.IsSuccess || userResult.Value is null) return false;
 
-        var credential = await _credentialsRepository.GetUserCredentials(user.Id);
+        var credential = await _credentialsRepository.GetUserCredentials(userResult.Value.Id);
         return credential is not null && BCrypt.Net.BCrypt.Verify(password, credential.PasswordHash);
     }
 }

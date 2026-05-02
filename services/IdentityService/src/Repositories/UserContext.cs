@@ -1,5 +1,5 @@
+using IdentityService.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 
 public class UserContext : DbContext
 {
@@ -8,5 +8,11 @@ public class UserContext : DbContext
     }
 
     public DbSet<IdentityService.Models.User> Users { get; set; }
-    public DbSet<IdentityService.Models.UserCredentials> UserCredentials {get;set;}
+    public DbSet<IdentityService.Models.UserCredentials> UserCredentials { get; set; }
+    public DbSet<Session> Sessions { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.HasPostgresEnum<Shared.Models.ClientType>("client_type_enum");
+    }
 }

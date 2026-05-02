@@ -2,6 +2,8 @@ using Shared.Models;
 using Scalar.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 using PlanService.Repositories;
+using PlanService.Interfaces;
+using PlanService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,9 +44,14 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwtSettings.Secret))
     };
 });
-
+//repositories
 builder.Services.AddScoped<IPlanRepository, PlanRepository>();  
-
+builder.Services.AddScoped<IPlanShareRepository, PlanShareRepository>();
+builder.Services.AddScoped<IMealPlanRepository, MealPlanRepository>();  
+builder.Services.AddScoped<IMealItemPlanRepository, MealItemPlanRepository>();
+//serives
+builder.Services.AddScoped<IPlanningService, PlanningService>();
+builder.Services.AddScoped<IMealPlanService, MealPlanService>();    
 
 //Database
 var conn = builder.Configuration.GetConnectionString("Postgres");

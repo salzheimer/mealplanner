@@ -7,4 +7,5 @@ public static class UserErrors
     public static readonly Error NotFound = new ("User.NotFound", "Email not found.");
     public static readonly Error UserAlreadyExists = new ("User.AlreadyExists", "User already exists.");
     public static readonly Error MissingEmailOrPassword = new ("User.MissingEmailOrPassword", "Email and password are required.");
+    public static readonly Error InvalidRefreshToken = new ("User.InvalidRefreshToken", "The refresh token is invalid or has expired.");
 }

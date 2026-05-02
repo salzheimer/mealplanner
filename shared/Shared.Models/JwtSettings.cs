@@ -4,5 +4,6 @@ public record JwtSettings(
     string Issuer,
     string Audience,
     string Secret,
-    int ExpiresMinutes
+    int ExpiresMinutes,
+    int RefreshTokenExpiryDays = 7
 );

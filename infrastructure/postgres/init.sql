@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS password_reset (
 
 -- sessions
 CREATE TABLE IF NOT EXISTS session (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES "user"(id),
     token_hash TEXT NOT NULL,
     client_type client_type_enum NOT NULL,
@@ -193,6 +193,7 @@ CREATE TABLE IF NOT EXISTS meal_plan (
     end_date DATE,
     added_by_user_id INT REFERENCES "user"(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (meal_id, plan_id, serve_date)
 );
 

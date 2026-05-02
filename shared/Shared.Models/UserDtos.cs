@@ -29,6 +29,9 @@ public record LoginRequest(
 
 public record LoginResponse(
     string AccessToken,
+    string RefreshToken,
     string TokenType = "Bearer",
-    int ExpiresInSeconds = 3600
+    int ExpiresInSeconds = 900
 );
+
+public record RefreshRequest(string RefreshToken);

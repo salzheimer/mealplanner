@@ -5,5 +5,6 @@ public interface IUserService
 {
     Task<Result<UserResponseDto>> CreateUserAsync(CreateUserDto userDto);
     Task<Result<UserResponseDto?>> FindByEmail(string email);
+    Task<Result<UserResponseDto?>> FindById(int id);
     Task<bool> ValidateCredentials(string email, string password);
 }

@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PlanService.Models;
-[Table("meal_item")]
+[Table("meal_item_plan")]
 public class MealItemPlan
 {
     [Key]
@@ -13,9 +13,9 @@ public class MealItemPlan
     public int MealItemId { get; set; }
    
     [Column("assigned_to_guest_name")]  
-    public string AssignedToGuestName { get; set; } = string.Empty;
+    public string? AssignedToGuestName { get; set; } = string.Empty;
     [Column("assigned_to_user")]
-    public int AssignedToUserId { get; set; }
+    public int? AssignedToUserId { get; set; }
     [Column("status")]
     public ItemStatus Status { get; set; }
     [Column("notes")]

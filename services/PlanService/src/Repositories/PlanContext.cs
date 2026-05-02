@@ -8,5 +8,8 @@ public class PlanContext : DbContext
     }
 
     public DbSet<PlanService.Models.Plan> Plans { get; set; }
+    public DbSet<PlanService.Models.PlanShare> PlanShares { get; set; }
+    public DbSet<PlanService.Models.MealItemPlan> MealItemPlans { get; set; }   
+    public DbSet<PlanService.Models.MealPlan> MealPlans { get; set; }
    
 }

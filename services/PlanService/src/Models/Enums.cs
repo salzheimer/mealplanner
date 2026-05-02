@@ -6,3 +6,8 @@ public enum ItemStatus
     Pending,
     Confirmed
 }
+public enum Permission
+{
+    View,
+    Edit    
+}

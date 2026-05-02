@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using Shared.Models;
@@ -18,6 +19,11 @@ public class TokenService
         _issuer = issuer;
         _audience = audience;
         _secret = secret;
+    }
+
+    public static string GenerateRefreshToken()
+    {
+        return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
     }
 
     public string GenerateToken(int userId, string email, TimeSpan expiresIn)

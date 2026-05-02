@@ -1,10 +1,12 @@
+using IdentityService.Interfaces;
+using IdentityService.Models;
+using IdentityService.Repositories;
+using IdentityService.Services;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using Scalar.AspNetCore;
 using Shared.Models;
 using Shared.Services;
-using IdentityService.Services;
-using IdentityService.Repositories;
-using IdentityService.Interfaces;
-using Scalar.AspNetCore;
-using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,11 +36,14 @@ builder.Services.AddSingleton(new TokenService(jwtSettings.Issuer, jwtSettings.A
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserCredentialsRepository, UserCredentialsRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
-
+builder.Services.AddScoped<ISessionRepository, SessionRepository>();
 
 //Database
 var conn = builder.Configuration.GetConnectionString("Postgres");
-builder.Services.AddDbContext<UserContext>(options=>options.UseNpgsql(conn));
+var dataSourceBuilder = new NpgsqlDataSourceBuilder(conn);
+dataSourceBuilder.MapEnum<Shared.Models.ClientType>("client_type_enum");
+var dataSource = dataSourceBuilder.Build();
+builder.Services.AddDbContext<UserContext>(options => options.UseNpgsql(dataSource));
 
 var app = builder.Build();
 
