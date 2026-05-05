@@ -17,4 +17,12 @@ public class Plan
     public DateTime? EndDate { get; set; }
     [Column("owner_user_id")]
     public int OwnerUserId { get; set; }
+     [Column("created_at")]
+    public DateTime CreatedAt { get; set; }
+    [Column("updated_at")]
+    public DateTime UpdatedAt { get; set; }
+    [Column("created_by")]
+    public int CreatedBy { get; set; }
+    [Column("updated_by")]
+    public int UpdatedBy { get; set; }
 }

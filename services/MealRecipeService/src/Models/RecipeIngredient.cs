@@ -15,4 +15,14 @@ public class RecipeIngredient
     public decimal? Amount { get; set; }
     [Column("measurement_type")]
     public string? MeasurementType { get; set; }
+    [Column("note")]
+     public string? Note { get; set; }
+    [Column("created_at")]
+    public DateTime CreatedAt { get; set; }
+    [Column("updated_at")]
+    public DateTime UpdatedAt { get; set; }
+    [Column("created_by")]
+    public int CreatedBy { get; set; }
+    [Column("updated_by")]
+    public int UpdatedBy { get; set; }
 }

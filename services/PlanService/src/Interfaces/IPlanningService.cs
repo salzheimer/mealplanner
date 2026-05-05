@@ -4,18 +4,18 @@ using Shared.Models;
 namespace PlanService.Interfaces;
 public interface IPlanningService
 {
-    Task<Result<PlanDto>> CreatePlanAsync(PlanCreateDto plan);
-    Task<Result<PlanDto>> GetPlanByIdAsync(int id);
-    Task<Result<IEnumerable<PlanDto>>> GetPlansForUserAsync(int userId);
-    Task<Result<IEnumerable<PlanDto>>> GetPlansByStartDateAsync(DateTime startDate);
-    Task<Result<IEnumerable<PlanDto>>> GetPlansByEndDateAsync(DateTime endDate);
-    Task<Result<IEnumerable<PlanDto>>> GetPlansByDateRangeAsync(DateTime startDate, DateTime endDate);
-    Task<Result<PlanDto>> UpdatePlanAsync(PlanUpdateDto plan);
-    Task<Result<bool>> DeletePlanAsync(int id);
+    Task<Result<PlanSummaryDto>> CreatePlanAsync(int currentUserId,PlanCreateDto plan);
+    Task<Result<PlanSummaryDto>> GetPlanByIdAsync(int id);
+    Task<Result<IEnumerable<PlanSummaryDto>>> GetPlansForUserAsync(int userId);
+    Task<Result<IEnumerable<PlanSummaryDto>>> GetPlansByStartDateAsync(int currentUserId,DateTime startDate);
+    Task<Result<IEnumerable<PlanSummaryDto>>> GetPlansByEndDateAsync(int currentUserId,DateTime endDate);
+    Task<Result<IEnumerable<PlanSummaryDto>>> GetPlansByDateRangeAsync(int currentUserId,DateTime startDate, DateTime endDate);
+    Task<Result<PlanSummaryDto>> UpdatePlanAsync(int currentUserId,PlanUpdateDto plan);
+    Task<Result<bool>> DeletePlanAsync(int currentUserId,int id);
 
-    Task<Result<PlanShareDto>> CreatePlanShareAsync(PlanShareCreateDto planShare);
-    Task<Result<IEnumerable<PlanShareDto>>> GetPlanSharesByPlanIdAsync(int planId);
-    Task<Result<IEnumerable<PlanShareDto>>> GetPlanSharesByUserIdAsync(int userId);
-    Task<Result<PlanShareDto>> UpdatePlanShareAsync(PlanShareUpdateDto planShare);
-    Task<Result<bool>> DeletePlanShareAsync(int planShareId);
+    Task<Result<PlanShareDto>> CreatePlanShareAsync(int currentUserId,PlanShareCreateDto planShare);
+    Task<Result<IEnumerable<PlanShareDto>>> GetPlanSharesByPlanIdAsync(int currentUserId, int planId);
+    Task<Result<IEnumerable<PlanShareDto>>> GetPlanSharesBySharedByUserIdAsync(int currentUserId);
+    Task<Result<PlanShareDto>> UpdatePlanShareAsync(int currentUserId,PlanShareUpdateDto planShare);
+    Task<Result<bool>> DeletePlanShareAsync(int currentUserId,int planShareId);
 }

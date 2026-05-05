@@ -24,6 +24,10 @@ public class MealItemPlan
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     [Column("updated_at")]  
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    [Column("created_by")]
+    public int CreatedBy { get; set; }
+    [Column("updated_by")]
+    public int UpdatedBy { get; set; }
 
 
 }

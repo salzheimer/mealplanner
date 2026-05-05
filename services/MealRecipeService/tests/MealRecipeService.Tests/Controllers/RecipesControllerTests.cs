@@ -28,7 +28,7 @@ public class RecipesControllerTests
         null, null
     );
 
-    private static RecipeIngredientDto MakeIngredient(int id = 1, int recipeId = 1) => new(
+    private static RecipeIngredientSummaryDto MakeIngredient(int id = 1, int recipeId = 1) => new(
         id, recipeId, "Bacon", 200m, "grams"
     );
 
@@ -181,9 +181,9 @@ public class RecipesControllerTests
     [Fact]
     public async Task GetIngredients_ValidRecipeId_ReturnsIngredients()
     {
-        var ingredients = new List<RecipeIngredientDto> { MakeIngredient(1, 1), MakeIngredient(2, 1) };
+        var ingredients = new List<RecipeIngredientSummaryDto> { MakeIngredient(1, 1), MakeIngredient(2, 1) };
         _recipeService.Setup(s => s.GetIngredientsByRecipeIdAsync(1))
-            .ReturnsAsync(Result<IEnumerable<RecipeIngredientDto>>.Success(ingredients));
+            .ReturnsAsync(Result<IEnumerable<RecipeIngredientSummaryDto>>.Success(ingredients));
 
         var result = await _controller.GetIngredients(1);
 
@@ -195,7 +195,7 @@ public class RecipesControllerTests
     public async Task GetIngredients_NonExistentRecipe_ReturnsFailure()
     {
         _recipeService.Setup(s => s.GetIngredientsByRecipeIdAsync(999))
-            .ReturnsAsync(Result<IEnumerable<RecipeIngredientDto>>.Failure(RecipeErrors.NotFound));
+            .ReturnsAsync(Result<IEnumerable<RecipeIngredientSummaryDto>>.Failure(RecipeErrors.NotFound));
 
         var result = await _controller.GetIngredients(999);
 
@@ -210,7 +210,7 @@ public class RecipesControllerTests
     {
         var ingredientDto = MakeIngredient(0, 1);
         _recipeService.Setup(s => s.AddIngredientToRecipeAsync(ingredientDto))
-            .ReturnsAsync(Result<RecipeIngredientDto>.Success(MakeIngredient(1, 1)));
+            .ReturnsAsync(Result<RecipeIngredientSummaryDto>.Success(MakeIngredient(1, 1)));
 
         var result = await _controller.AddIngredient(ingredientDto);
 
@@ -223,7 +223,7 @@ public class RecipesControllerTests
     {
         var ingredientDto = MakeIngredient(0, 999);
         _recipeService.Setup(s => s.AddIngredientToRecipeAsync(ingredientDto))
-            .ReturnsAsync(Result<RecipeIngredientDto>.Failure(RecipeIngredientErrors.UnableToCreate));
+            .ReturnsAsync(Result<RecipeIngredientSummaryDto>.Failure(RecipeIngredientErrors.UnableToCreate));
 
         var result = await _controller.AddIngredient(ingredientDto);
 

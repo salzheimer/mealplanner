@@ -43,7 +43,10 @@ public class PlanShareRepository : IPlanShareRepository
     {
         return await _context.PlanShares.Where(ps => ps.SharedByUserId == userId).ToListAsync();
     }
-
+    public async Task<IEnumerable<PlanShare>> GetPlanSharesBySharedWithUserIdAsync(int userId)
+    {
+        return await _context.PlanShares.Where(ps => ps.SharedWithUserId == userId).ToListAsync();
+    }
     public async Task<bool> UpdatePlanShareAsync(PlanShare planShare)
     {
         _context.PlanShares.Update(planShare);

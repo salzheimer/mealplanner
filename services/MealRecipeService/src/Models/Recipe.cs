@@ -32,6 +32,11 @@ public class Recipe
     public DateTime CreatedAt { get; set; }
     [Column("updated_at")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    [Column("created_by")]
+    public int? CreatedBy { get; set; }
+    [Column("updated_by")]
+    public int? UpdatedBy { get; set; }
+     
     public List<RecipeIngredient> Ingredients { get; set; } = new();
     public List<RecipeInstruction> Instructions { get; set; } = new();
 }

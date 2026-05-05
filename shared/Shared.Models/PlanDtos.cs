@@ -1,6 +1,6 @@
 namespace Shared.Models;
 
-public record PlanDto(
+public record PlanSummaryDto(
     int Id,
     string? Name,
     int OwnerUserId,
@@ -8,12 +8,23 @@ public record PlanDto(
     DateTime? EndDate
 
 );
+public record PlanDetailDto(
+    int Id,
+    string? Name,
+    int OwnerUserId,
+    DateTime StartDate,
+    DateTime? EndDate, 
+    int CreatedBy,
+    int UpdatedBy,
+    DateTime CreatedAt,
+    DateTime UpdatedAt
 
+);
 public record PlanCreateDto(
     string? Name,
     DateTime StartDate,
-    DateTime? EndDate,
-    int OwnerUserId
+    DateTime? EndDate
+   
 );
 
 public record PlanUpdateDto(

@@ -5,15 +5,16 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- enum types
-CREATE TYPE visibility_enum AS ENUM ('private', 'shared', 'group');
+
 CREATE TYPE meal_type_enum AS ENUM ('breakfast', 'lunch', 'dinner', 'snack');
 CREATE TYPE item_type_enum AS ENUM ('recipe', 'homemade', 'store_bought');
 CREATE TYPE status_enum AS ENUM ('confirmed', 'pending', 'unknown');
 CREATE TYPE group_member_role_enum AS ENUM ('owner', 'member');
 CREATE TYPE group_member_status_enum AS ENUM ('pending', 'active', 'removed');
-CREATE TYPE permission_enum AS ENUM ('view', 'edit');
+CREATE TYPE permission_enum AS ENUM ('view', 'edit', 'comment', 'manage');
 CREATE TYPE client_type_enum AS ENUM ('web', 'mobile', 'api');
-
+CREATE TYPE resource_type_enum AS ENUM ('recipe', 'meal', 'plan');
+CREATE TYPE subject_type_enum AS ENUM ('user', 'group');
 -- user
 CREATE TABLE IF NOT EXISTS "user" (
     id SERIAL PRIMARY KEY,
@@ -102,6 +103,25 @@ CREATE TABLE IF NOT EXISTS audit_log (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- resource permissions
+CREATE TABLE IF NOT EXISTS resource_permission (
+
+    id BIGSERIAL PRIMARY KEY,
+    resource_type   resource_type_enum NOT NULL,
+    resource_id      int
+    subject_type     subject_type_enum NOT NULL,           
+    subject_id       int                 
+    permission       permission_enum NOT NULL,
+    granted_by       INT REFERENCES "user"(id) NOT NULL,
+    created_at       TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    expires_at       TIMESTAMP WITH TIME ZONE NULLABLE,
+    updated_by       INT REFERENCES "user"(id)
+    updated_at       TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE (resource_type, resource_id, subject_type, subject_id)
+    CHECK  (expires_at IS NULL OR expires_at > created_at)
+);
+
 -- recipes
 CREATE TABLE IF NOT EXISTS recipe (
     id SERIAL PRIMARY KEY,
@@ -114,9 +134,10 @@ CREATE TABLE IF NOT EXISTS recipe (
     prep_time TIME,
     servings INT,
     owner_user_id INT REFERENCES "user"(id),
-    visibility visibility_enum,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by INT REFERENCES "user"(id),
+    updated_by INT REFERENCES "user"(id)
 );
 
 -- recipe instructions
@@ -125,7 +146,11 @@ CREATE TABLE IF NOT EXISTS recipe_instructions (
     recipe_id INT NOT NULL REFERENCES recipe(id),
     description TEXT,
     step_number INT,
-    note TEXT
+    note TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by INT REFERENCES "user"(id),
+    updated_by INT REFERENCES "user"(id)
 );
 
 -- recipe ingredients
@@ -134,28 +159,26 @@ CREATE TABLE IF NOT EXISTS recipe_ingredients (
     name TEXT,
     amount NUMERIC,
     measurement_type TEXT,
-    recipe_id INT REFERENCES recipe(id)
-);
-
--- recipe shares
-CREATE TABLE IF NOT EXISTS recipe_share (
-    id SERIAL PRIMARY KEY,
-    recipe_id INT NOT NULL REFERENCES recipe(id),
-    shared_with_user_id INT REFERENCES "user"(id),
-    shared_with_group_id INT REFERENCES "group"(id),
-    permission permission_enum NOT NULL DEFAULT 'view',
-    shared_by_user_id INT REFERENCES "user"(id),
+    note TEXT,
+    recipe_id INT REFERENCES recipe(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP WITH TIME ZONE
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by INT REFERENCES "user"(id),
+    updated_by INT REFERENCES "user"(id)
 );
 
+ 
 -- plans
 CREATE TABLE IF NOT EXISTS plan (
     id SERIAL PRIMARY KEY,
     start_date DATE,
     end_date DATE,
     name TEXT,
-    owner_user_id INT REFERENCES "user"(id)
+    owner_user_id INT REFERENCES "user"(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by INT REFERENCES "user"(id),
+    updated_by INT REFERENCES "user"(id)
 );
 
 -- meals
@@ -167,22 +190,13 @@ CREATE TABLE IF NOT EXISTS meal (
     meal_type meal_type_enum,
     is_multi_day_meal BOOLEAN,
     owner_user_id INT REFERENCES "user"(id),
-    visibility visibility_enum,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by INT REFERENCES "user"(id),
+    updated_by INT REFERENCES "user"(id)
 );
 
--- meal shares
-CREATE TABLE IF NOT EXISTS meal_share (
-    id SERIAL PRIMARY KEY,
-    meal_id INT NOT NULL REFERENCES meal(id),
-    shared_with_user_id INT REFERENCES "user"(id),
-    shared_with_group_id INT REFERENCES "group"(id),
-    permission permission_enum NOT NULL DEFAULT 'view',
-    shared_by_user_id INT REFERENCES "user"(id),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP WITH TIME ZONE
-);
+ 
 
 -- meal plan scheduling
 CREATE TABLE IF NOT EXISTS meal_plan (
@@ -194,6 +208,8 @@ CREATE TABLE IF NOT EXISTS meal_plan (
     added_by_user_id INT REFERENCES "user"(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by INT REFERENCES "user"(id),
+    updated_by INT REFERENCES "user"(id),
     UNIQUE (meal_id, plan_id, serve_date)
 );
 
@@ -203,7 +219,11 @@ CREATE TABLE IF NOT EXISTS meal_item (
     meal_id INT NOT NULL REFERENCES meal(id),
     name TEXT,
     recipe_id INT REFERENCES recipe(id),
-    item_type item_type_enum
+    item_type item_type_enum,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by INT REFERENCES "user"(id),
+    updated_by INT REFERENCES "user"(id)
 );
 
 -- meal plan items (assignment layer — who brings/makes what for a specific scheduled instance)
@@ -216,17 +236,9 @@ CREATE TABLE IF NOT EXISTS meal_item_plan (
     status status_enum,
     notes TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by INT REFERENCES "user"(id),
+    updated_by INT REFERENCES "user"(id)
 );
 
--- plan shares
-CREATE TABLE IF NOT EXISTS plan_share (
-    id SERIAL PRIMARY KEY,
-    plan_id INT NOT NULL REFERENCES plan(id),
-    shared_with_user_id INT REFERENCES "user"(id),
-    shared_with_group_id INT REFERENCES "group"(id),
-    permission permission_enum NOT NULL DEFAULT 'view',
-    shared_by_user_id INT REFERENCES "user"(id),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP WITH TIME ZONE
-);
+

@@ -16,14 +16,14 @@ public class MealPlanService : IMealPlanService
 
     #region MealPlan management
 
-    public async Task<Result<MealPlanDto?>> CreateMealPlanAsync(MealPlanCreateDto mealPlan)
+    public async Task<Result<MealPlanDto?>> CreateMealPlanAsync(int userId, MealPlanCreateDto mealPlan)
     {
          var plan= new MealPlan{
             MealId = mealPlan.MealId,
             PlanId = mealPlan.PlanId,
             ServeDate = mealPlan.ServeDate,
             EndDate = mealPlan.EndDate,
-            AddedByUserId = mealPlan.AddedByUserId
+            AddedByUserId = userId
          };
          var createdPlan =await _mealPlanRepository.CreateMealPlanAsync(plan);
     
@@ -46,8 +46,15 @@ public class MealPlanService : IMealPlanService
             return Result<MealPlanDto?>.Success(mealPlanDto);
     }
 
-    public async Task<Result<bool>> DeleteMealPlanAsync(int id)
+    public async Task<Result<bool>> DeleteMealPlanAsync(int userId, int id)
     {
+        var existingPlan = await _mealPlanRepository.GetMealPlanByIdAsync(id);
+        if (existingPlan == null)        {
+            return Result<bool>.Failure(MealPlanErrors.MealPlanNotFound);
+        }
+        if (existingPlan.AddedByUserId != userId)        {
+            return Result<bool>.Failure(MealPlanErrors.Unauthorized);
+        }
         var success = await _mealPlanRepository.DeleteMealPlanAsync(id);
         if (!success)
         {
@@ -58,7 +65,7 @@ public class MealPlanService : IMealPlanService
 
 
 
-    public async Task<Result<MealPlanDto?>> GetMealPlanByIdAsync(int id)
+    public async Task<Result<MealPlanDto?>> GetMealPlanByIdAsync(int userId, int id)
     {
         var plan = await _mealPlanRepository.GetMealPlanByIdAsync(id);
         if (plan == null)
@@ -80,7 +87,7 @@ public class MealPlanService : IMealPlanService
         return Result<MealPlanDto?>.Success(mealPlanDto);
     }
 
-    public async Task<Result<IEnumerable<MealPlanDto>>> GetMealPlansByDateRangeAsync(DateTime startDate, DateTime endDate)
+    public async Task<Result<IEnumerable<MealPlanDto>>> GetMealPlansByDateRangeAsync(int userId, DateTime startDate, DateTime endDate)
     {
        var plans = await _mealPlanRepository.GetMealPlansByDateRangeAsync(startDate, endDate);
         var mealPlanDtos = plans.Select(plan => new MealPlanDto(
@@ -97,7 +104,7 @@ public class MealPlanService : IMealPlanService
         return Result<IEnumerable<MealPlanDto>>.Success(mealPlanDtos);
     }
 
-    public async Task<Result<IEnumerable<MealPlanDto>>> GetMealPlansByEndDateAsync(DateTime endDate)
+    public async Task<Result<IEnumerable<MealPlanDto>>> GetMealPlansByEndDateAsync(int userId, DateTime endDate)
     {
         var plans = await _mealPlanRepository.GetMealPlansByEndDateAsync(endDate);
         var mealPlanDtos = plans.Select(plan => new MealPlanDto(
@@ -114,7 +121,7 @@ public class MealPlanService : IMealPlanService
         return Result<IEnumerable<MealPlanDto>>.Success(mealPlanDtos);
     }
 
-    public async Task<Result<IEnumerable<MealPlanDto>>> GetMealPlansByStartDateAsync(DateTime startDate)
+    public async Task<Result<IEnumerable<MealPlanDto>>> GetMealPlansByStartDateAsync(int userId, DateTime startDate)
     {
         var plans = await _mealPlanRepository.GetMealPlansByStartDateAsync(startDate);
         var mealPlanDtos = plans.Select(plan => new MealPlanDto(
@@ -151,7 +158,7 @@ public class MealPlanService : IMealPlanService
     #endregion
 
 
-    public async Task<Result<MealPlanDto>>  UpdateMealPlanAsync(MealPlanUpdateDto mealPlan)
+    public async Task<Result<MealPlanDto>>  UpdateMealPlanAsync(int userId, MealPlanUpdateDto mealPlan)
     {
         var existingPlan = await _mealPlanRepository.GetMealPlanByIdAsync(mealPlan.Id);
         if (existingPlan == null)
@@ -185,7 +192,7 @@ public class MealPlanService : IMealPlanService
         return Result<MealPlanDto>.Success(updatedMealPlanDto);
     }
     #region  MealItemPlan management
-    public async Task<Result<MealItemPlanDto?>> AddMealItemToPlanAsync(MealItemPlanCreateDto mealItemPlan)
+    public async Task<Result<MealItemPlanDto?>> AddMealItemToPlanAsync(int userId, MealItemPlanCreateDto mealItemPlan)
     {
         var mealItemPlanEntity = new MealItemPlan
         {
@@ -217,7 +224,7 @@ public class MealPlanService : IMealPlanService
 
         return Result<MealItemPlanDto?>.Success(mealItemPlanDto);
     }
-    public async Task<Result<IEnumerable<MealItemPlanDto>>> GetMealItemsForMealPlanAsync(int mealPlanId)
+    public async Task<Result<IEnumerable<MealItemPlanDto>>> GetMealItemsForMealPlanAsync(int userId, int mealPlanId)
     {
         var mealItemPlans = await _mealItemPlanRepository.GetMealItemsForMealPlanAsync(mealPlanId);
         var mealItemPlanDtos = mealItemPlans.Select(mip => new MealItemPlanDto(
@@ -234,7 +241,7 @@ public class MealPlanService : IMealPlanService
 
         return Result<IEnumerable<MealItemPlanDto>>.Success(mealItemPlanDtos);
     }
-    public async Task<Result<MealItemPlanDto>> UpdateMealItemInPlanAsync(MealItemPlanUpdateDto mealItemPlan)
+    public async Task<Result<MealItemPlanDto>> UpdateMealItemInPlanAsync(int userId, MealItemPlanUpdateDto mealItemPlan)
     {
         var existingMealItemPlan = await _mealItemPlanRepository.GetMealItemsForMealPlanAsync(mealItemPlan.MealPlanId);
         var mealItemPlanEntity = existingMealItemPlan.FirstOrDefault(mip => mip.Id == mealItemPlan.Id);
@@ -268,7 +275,7 @@ public class MealPlanService : IMealPlanService
         return Result<MealItemPlanDto>.Success(updatedMealItemPlanDto);
     }
 
-    public async Task<Result<bool>> RemoveMealItemFromPlanAsync(int mealItemPlanId)
+    public async Task<Result<bool>> RemoveMealItemFromPlanAsync(int userId, int mealItemPlanId)
     {
         var success = await _mealItemPlanRepository.RemoveMealItemFromMealPlanAsync(mealItemPlanId);
         if (!success)

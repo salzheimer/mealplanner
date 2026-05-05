@@ -45,7 +45,9 @@ public enum GroupMemberStatus
 public enum Permission
 {
     View,
-    Edit
+    Edit,
+    Comment,
+    Manage
 }
 
 public enum ClientType
@@ -53,4 +55,15 @@ public enum ClientType
     Web,
     Mobile,
     Api
+}
+public enum ResourceType
+{
+    Recipe,
+    Meal,
+    Plan
+}
+public enum SubjectType
+{
+    User,
+    Group
 }

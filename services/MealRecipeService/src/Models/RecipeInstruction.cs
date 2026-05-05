@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MealRecipeService.Models;
+
 [Table("recipe_instructions")]
 public class RecipeInstruction
 {
@@ -9,10 +10,18 @@ public class RecipeInstruction
     public int Id { get; set; }
     [Column("recipe_id")]
     public int RecipeId { get; set; }
-    [Column("step_number")] 
+    [Column("step_number")]
     public int? StepNumber { get; set; }
     [Column("description")]
     public string? Description { get; set; }
     [Column("note")]
     public string? Note { get; set; }
+    [Column("created_at")]
+    public DateTime CreatedAt { get; set; }
+    [Column("updated_at")]
+    public DateTime UpdatedAt { get; set; }
+    [Column("created_by")]
+    public int CreatedBy { get; set; }
+    [Column("updated_by")]
+    public int UpdatedBy { get; set; }
 }

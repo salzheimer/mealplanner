@@ -26,6 +26,8 @@ public class Meal
     public DateTime CreatedAt { get; set; }
     [Column("updated_at")]
     public DateTime UpdatedAt { get; set; }
+    [Column("owned_by_user_id")]
+    public int OwenedByUserId { get; set; }
 }
 
 

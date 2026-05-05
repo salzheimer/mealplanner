@@ -11,8 +11,7 @@ public record RecipeDto(
     TimeSpan? PrepTime,
     int? Servings,
     int? OwnerUserId,
-    Visibility? Visibility,
-    IEnumerable<RecipeIngredientDto>? Ingredients,
+    IEnumerable<RecipeIngredientSummaryDto>? Ingredients,
     IEnumerable<RecipeInstructionDto>? Instructions
 );
 public record RecipeSummaryDto(
@@ -24,17 +23,9 @@ public record RecipeSummaryDto(
     TimeSpan? CookTime,
     TimeSpan? PrepTime,
     int? Servings,
-    int? OwnerUserId,
-    Visibility? Visibility
+    int? OwnerUserId
 );
 
-public record RecipeIngredientDto(
-    int Id,
-    int RecipeId,
-    string? Name,
-    decimal? Amount,
-    string? MeasurementType
-);
 
 
 
@@ -47,8 +38,7 @@ public record RecipeCreateDto(
     TimeSpan? CookTime,
     TimeSpan? PrepTime,
     int? Servings,
-    int? OwnerUserId,
-    Visibility? Visibility
+    int? OwnerUserId
 );
 
 public record RecipeUpdateDto(
@@ -60,12 +50,48 @@ public record RecipeUpdateDto(
     string? OriginalSource,
     TimeSpan? CookTime,
     TimeSpan? PrepTime,
-    int? Servings,
-    Visibility? Visibility
+    int? Servings
 );
+
 //Recipe ingredient DTOs
+public record RecipeIngredientDetailDto(
+    int Id,
+    int RecipeId,
+    string? Name,
+    decimal? Amount,
+    string? MeasurementType,
+    string? Note,
+    DateTime CreatedAt,
+    DateTime UpdatedAt,
+    int CreatedBy,
+    int UpdatedBy
+);
+public record RecipeIngredientSummaryDto(
+    int Id,
+    int RecipeId,
+    string? Name,
+    decimal? Amount,
+    string? MeasurementType,
+    string? Note
+);
+public record RecipeIngredientCreateDto(
+    int RecipeId,
+    string? Name,
+    decimal? Amount,
+    string? MeasurementType,
+    string? Note
+);
+
+
+//Recipe instructions DTOs
 public record RecipeInstructionDto(
     int Id,
+    int RecipeId,
+    int? StepNumber,
+    string? Description,
+    string? Note
+);
+public record RecipeInstructionCreateDto(
     int RecipeId,
     int? StepNumber,
     string? Description,
@@ -102,7 +128,7 @@ public record RecipeShareUpdateDto(
 //Meal DTOs
 public record MealDto(
     int Id,
-    string ? Name,
+    string? Name,
     string? Description,
     string? Notes,
     MealType MealType,
@@ -110,29 +136,28 @@ public record MealDto(
     Visibility? Visibility,
     DateTime? CreateAt,
     DateTime? UpdatedAt
-    
+
 );
 
 public record MealCreateDto(
     MealType MealType,
-    string  Name,
+    string Name,
     string? Description,
     string? Notes,
-    bool? IsMultiDayMeal,
-    Visibility? Visibility
-    
-     
+    bool? IsMultiDayMeal
+
+
 );
 public record MealUpdateDto(
     int Id,
     MealType MealType,
-    string  Name,
+    string Name,
     string? Description,
     string? Notes,
     bool? IsMultiDayMeal,
-    Visibility? Visibility,    
+
     DateTime? UpdatedAt
-     
+
 );
 public record MealItemDto(
     int Id,
@@ -140,7 +165,7 @@ public record MealItemDto(
     int MealId,
     int? RecipeId,
     ItemType? ItemType
-    
+
 );
 
 public record MealItemCreateDto(
@@ -148,7 +173,7 @@ public record MealItemCreateDto(
     int MealId,
     int? RecipeId,
     ItemType? ItemType
-   
+
 );
 public record MealItemUpdateDto(
     int Id,
@@ -156,7 +181,7 @@ public record MealItemUpdateDto(
     int MealId,
     int? RecipeId,
     ItemType? ItemType
-   
+
 );
 //Meal share DTOs
 public record MealShareDto(

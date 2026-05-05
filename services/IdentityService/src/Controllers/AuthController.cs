@@ -7,6 +7,7 @@ using IdentityService.Interfaces;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using IdentityService.Mappings;
 
 namespace IdentityService.Controllers;
 
@@ -15,13 +16,15 @@ namespace IdentityService.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IUserService _userService;
+    private readonly IResourcePermissionService _permissionService;
     private readonly ISessionRepository _sessionRepository;
     private readonly TokenService _tokenService;
     private readonly JwtSettings _jwtSettings;
 
-    public AuthController(IUserService userService, ISessionRepository sessionRepository, TokenService tokenService, JwtSettings jwtSettings)
+    public AuthController(IUserService userService, IResourcePermissionService permissionService, ISessionRepository sessionRepository, TokenService tokenService, JwtSettings jwtSettings)
     {
         _userService = userService;
+        _permissionService = permissionService;
         _sessionRepository = sessionRepository;
         _tokenService = tokenService;
         _jwtSettings = jwtSettings;
@@ -99,6 +102,60 @@ public class AuthController : ControllerBase
         return Task.FromResult<IActionResult>(Ok(new { valid = true }));
     }
 
+
+    [HttpPost("grant-permission")]
+    [Authorize]
+    public async Task<Result<ResourcePermissionDto>> GrantPermission([FromBody] ResourcePermissionCreateDto permission)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Result<ResourcePermissionDto>.Failure(UserErrors.Unauthorized);
+        }
+        var result = await _permissionService.AddPermissionAsync(permission);
+        return result;
+    }
+    [HttpGet("resource-permissions")]
+    [Authorize]
+    public async Task<Result<IEnumerable<ResourcePermissionDto>>> GetResourcePermissions(string resourceType, int resourceId)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Result<IEnumerable<ResourcePermissionDto>>.Failure(UserErrors.Unauthorized);
+        }
+        Shared.Models.ResourceType sharedResourceType = Enum.TryParse<Shared.Models.ResourceType>(resourceType, true, out var parsedResourceType) ? parsedResourceType : throw new ArgumentException("Invalid resource type");
+
+        var permissions = await _permissionService.GetPermissionsForResourceAsync(sharedResourceType, resourceId);
+        return permissions;
+    }
+    [HttpGet("subject-permissions")]
+    [Authorize]
+    public async Task<Result<IEnumerable<ResourcePermissionDto>>> GetSubjectPermissions(string subjectType, int subjectId)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Result<IEnumerable<ResourcePermissionDto>>.Failure(UserErrors.Unauthorized);
+        }
+        Shared.Models.SubjectType sharedSubjectType = Enum.TryParse<Shared.Models.SubjectType>(subjectType, true, out var parsedSubjectType) ? parsedSubjectType : throw new ArgumentException("Invalid subject type");
+
+        var permissions = await _permissionService.GetPermissionsForSubjectAsync(sharedSubjectType, subjectId);
+        return permissions;
+    }
+    [HttpGet("user-permissions")]
+    [Authorize]
+    public async Task<Result<IEnumerable<ResourcePermissionDto>>> GetUserPermissions(int userId)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdClaim, out var authenticatedUserId))
+        {
+            return Result<IEnumerable<ResourcePermissionDto>>.Failure(UserErrors.Unauthorized);
+        }
+        
+        var permissions = await _permissionService.GetPermissionsForSubjectAsync(Shared.Models.SubjectType.User, userId);
+        return permissions;
+    }
     private async Task<Result<LoginResponse>> IssueTokens(int userId, string email)
     {
         var accessToken = _tokenService.GenerateToken(userId, email, TimeSpan.FromMinutes(_jwtSettings.ExpiresMinutes));
@@ -108,7 +165,7 @@ public class AuthController : ControllerBase
         {
             UserId = userId,
             TokenHash = HashToken(refreshToken),
-            ClientType = Shared.Models.ClientType.Api,
+            ClientType = EnumMappings.ToEntityClientType(Shared.Models.ClientType.Api),
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             ExpiresAt = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays)

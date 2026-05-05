@@ -19,85 +19,122 @@ public class PlanningService : IPlanningService
 
     #region Plan Methods
 
-    public async Task<Result<PlanDto>> CreatePlanAsync(PlanCreateDto plan)
+    public async Task<Result<PlanSummaryDto>> CreatePlanAsync(int currentUserId, PlanCreateDto plan)
     {
         var newPlan = new Plan
         {
-            OwnerUserId = plan.OwnerUserId,
+            OwnerUserId = currentUserId,
             Name = plan.Name,
             StartDate = plan.StartDate,
-            EndDate = plan.EndDate
+            EndDate = plan.EndDate,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            CreatedBy = currentUserId,
+            UpdatedBy = currentUserId
         };
 
         var createdPlan = await _planRepository.CreatePlanAsync(newPlan);
         if (createdPlan == null)
         {
-            return Result<PlanDto>.Failure(PlanningErrors.UnableToCreate);
+            return Result<PlanSummaryDto>.Failure(PlanningErrors.UnableToCreate);
         }
-        var planDto = new PlanDto
+        var planDto = new PlanSummaryDto
         (
              Id: createdPlan.Id,
              Name: createdPlan.Name,
              OwnerUserId: createdPlan.OwnerUserId,
              StartDate: createdPlan.StartDate,
              EndDate: createdPlan.EndDate
+
         );
 
-        return Result<PlanDto>.Success(planDto);
+        return Result<PlanSummaryDto>.Success(planDto);
     }
 
-    public async Task<Result<PlanDto>> GetPlanByIdAsync(int id)
+    public async Task<Result<PlanSummaryDto>> GetPlanByIdAsync(int id)
     {
         var plan = await _planRepository.GetPlanByIdAsync(id);
         if (plan == null)
         {
-            return Result<PlanDto>.Failure(PlanningErrors.PlanNotFound);
+            return Result<PlanSummaryDto>.Failure(PlanningErrors.PlanNotFound);
         }
 
-        var planDto = new PlanDto
+        var planDto = new PlanSummaryDto
         (
-             Id: plan.Id,
-             Name: plan.Name,
-             OwnerUserId: plan.OwnerUserId,
-             StartDate: plan.StartDate,
-             EndDate: plan.EndDate
+            Id: plan.Id,
+            Name: plan.Name,
+            OwnerUserId: plan.OwnerUserId,
+            StartDate: plan.StartDate,
+            EndDate: plan.EndDate
         );
 
-        return Result<PlanDto>.Success(planDto);
+        return Result<PlanSummaryDto>.Success(planDto);
     }
 
-    public async Task<Result<IEnumerable<PlanDto>>> GetPlansByDateRangeAsync(DateTime startDate, DateTime endDate)
+    public async Task<Result<IEnumerable<PlanSummaryDto>>> GetPlansByDateRangeAsync(int currentUserId, DateTime startDate, DateTime endDate)
     {
+        IEnumerable<PlanSummaryDto> planDtos = new List<PlanSummaryDto>();
+        //todo: check what plans the user has access to (owned/shared) and filter by date range in repository
         var plans = await _planRepository.GetPlansByDateRangeAsync(startDate, endDate);
-        var planDtos = plans.Select(plan => new PlanDto
-        (
-            Id: plan.Id,
-            Name: plan.Name,
-            OwnerUserId: plan.OwnerUserId,
-            StartDate: plan.StartDate,
-            EndDate: plan.EndDate
-        ));
-        return Result<IEnumerable<PlanDto>>.Success(planDtos);
+        planDtos = await UserPlans(currentUserId, planDtos, plans);
+        return Result<IEnumerable<PlanSummaryDto>>.Success(planDtos);
     }
 
-    public async Task<Result<IEnumerable<PlanDto>>> GetPlansByEndDateAsync(DateTime endDate)
+    public async Task<Result<IEnumerable<PlanSummaryDto>>> GetPlansByEndDateAsync(int currentUserId, DateTime endDate)
     {
+        IEnumerable<PlanSummaryDto> planDtos = new List<PlanSummaryDto>();
+        //todo: check what plans the user has access to (owned/shared) and filter by end date in repository
         var plans = await _planRepository.GetPlansByEndDateAsync(endDate);
-        var planDtos = plans.Select(plan => new PlanDto
-        (
-            Id: plan.Id,
-            Name: plan.Name,
-            OwnerUserId: plan.OwnerUserId,
-            StartDate: plan.StartDate,
-            EndDate: plan.EndDate
-        ));
-        return Result<IEnumerable<PlanDto>>.Success(planDtos);
+        planDtos = await UserPlans(currentUserId, planDtos, plans);
+
+        return Result<IEnumerable<PlanSummaryDto>>.Success(planDtos);
     }
 
-    public async Task<Result<IEnumerable<PlanDto>>> GetPlansByStartDateAsync(DateTime startDate)
+    private async Task<IEnumerable<PlanSummaryDto>> UserPlans(int currentUserId, IEnumerable<PlanSummaryDto> planDtos, IEnumerable<Plan> plans)
     {
+        foreach (var plan in plans)
+        {
+            if (await UserHasAccessToPlan(currentUserId, plan.Id))
+            {
+                planDtos = planDtos.Append(new PlanSummaryDto
+                (
+                    Id: plan.Id,
+                    Name: plan.Name,
+                    OwnerUserId: plan.OwnerUserId,
+                    StartDate: plan.StartDate,
+                    EndDate: plan.EndDate
+                ));
+            }
+
+        }
+
+        return planDtos;
+    }
+
+    public async Task<Result<IEnumerable<PlanSummaryDto>>> GetPlansByStartDateAsync(int currentUserId, DateTime startDate)
+    {
+        IEnumerable<PlanSummaryDto> planDtos = new List<PlanSummaryDto>();
+        //todo: check what plans the user has access to (owned/shared) and filter by start date in repository
         var plans = await _planRepository.GetPlansByStartDateAsync(startDate);
-        var planDtos = plans.Select(plan => new PlanDto
+        planDtos = await UserPlans(currentUserId, planDtos, plans);
+        return Result<IEnumerable<PlanSummaryDto>>.Success(planDtos);
+    }
+
+    public async Task<Result<IEnumerable<PlanSummaryDto>>> GetPlansForUserAsync(int userId)
+    {
+        var plans = await _planRepository.GetPlansByOwnerAsync(userId);
+        var sharedPlans = await _planShareRepository.GetPlanSharesBySharedWithUserIdAsync(userId);
+
+        foreach (var share in sharedPlans)
+        {
+            var sharedPlan = await _planRepository.GetPlanByIdAsync(share.PlanId);
+            if (sharedPlan != null)
+            {
+                plans.Append(sharedPlan);
+            }
+        }
+
+        var planDtos = plans.Select(plan => new PlanSummaryDto
         (
             Id: plan.Id,
             Name: plan.Name,
@@ -105,29 +142,21 @@ public class PlanningService : IPlanningService
             StartDate: plan.StartDate,
             EndDate: plan.EndDate
         ));
-        return Result<IEnumerable<PlanDto>>.Success(planDtos);
+        return Result<IEnumerable<PlanSummaryDto>>.Success(planDtos);
     }
 
-    public async Task<Result<IEnumerable<PlanDto>>> GetPlansForUserAsync(int userId)
+    public async Task<Result<PlanSummaryDto>> UpdatePlanAsync(int currentUserId, PlanUpdateDto plan)
     {
-        var plans = await _planRepository.GetPlansForUserAsync(userId);
-        var planDtos = plans.Select(plan => new PlanDto
-        (
-            Id: plan.Id,
-            Name: plan.Name,
-            OwnerUserId: plan.OwnerUserId,
-            StartDate: plan.StartDate,
-            EndDate: plan.EndDate
-        ));
-        return Result<IEnumerable<PlanDto>>.Success(planDtos);
-    }
+        //todo: check if user has permission to update the plan (owner/shared with edit permission)
+        if (!await UserHasAccessToPlan(currentUserId, plan.Id))
+        {
+            return Result<PlanSummaryDto>.Failure(PlanningErrors.Unauthorized);
+        }
 
-    public async Task<Result<PlanDto>> UpdatePlanAsync(PlanUpdateDto plan)
-    {
         var existingPlan = await _planRepository.GetPlanByIdAsync(plan.Id);
         if (existingPlan == null)
         {
-            return Result<PlanDto>.Failure(PlanningErrors.PlanNotFound);
+            return Result<PlanSummaryDto>.Failure(PlanningErrors.PlanNotFound);
         }
 
         existingPlan.Name = plan.Name;
@@ -137,10 +166,10 @@ public class PlanningService : IPlanningService
         var updated = await _planRepository.UpdatePlanAsync(existingPlan);
         if (!updated)
         {
-            return Result<PlanDto>.Failure(PlanningErrors.UnableToUpdate);
+            return Result<PlanSummaryDto>.Failure(PlanningErrors.UnableToUpdate);
         }
 
-        return Result<PlanDto>.Success(new PlanDto
+        return Result<PlanSummaryDto>.Success(new PlanSummaryDto
         (
             Id: existingPlan.Id,
             Name: existingPlan.Name,
@@ -150,12 +179,18 @@ public class PlanningService : IPlanningService
         ));
     }
 
-    public async Task<Result<bool>> DeletePlanAsync(int id)
+    public async Task<Result<bool>> DeletePlanAsync(int currentUserId, int id)
     {
+        //todo: check if user has permission to delete the plan (owner/shared with edit permission)
+
         var plan = await _planRepository.GetPlanByIdAsync(id);
         if (plan == null)
         {
             return Result<bool>.Failure(PlanningErrors.PlanNotFound);
+        }
+        if (plan.OwnerUserId != currentUserId)
+        {
+            return Result<bool>.Failure(PlanningErrors.Unauthorized);
         }
 
         var deleted = await _planRepository.DeletePlanAsync(id);
@@ -172,7 +207,7 @@ public class PlanningService : IPlanningService
 
     #region PlanShare Methods
 
-    public async Task<Result<PlanShareDto>> CreatePlanShareAsync(PlanShareCreateDto planShare)
+    public async Task<Result<PlanShareDto>> CreatePlanShareAsync(int currentUserId, PlanShareCreateDto planShare)
     {
 
         var newPlanShare = new PlanShare
@@ -206,8 +241,14 @@ public class PlanningService : IPlanningService
         return Result<PlanShareDto>.Success(planShareDto);
     }
 
-    public async Task<Result<IEnumerable<PlanShareDto>>> GetPlanSharesByPlanIdAsync(int planId)
+    public async Task<Result<IEnumerable<PlanShareDto>>> GetPlanSharesByPlanIdAsync(int currentUserId, int planId)
     {
+        //todo: check if user has permission to view the plan shares (owner/shared with view permission)
+        if (!await UserHasAccessToPlan(currentUserId, planId))
+        {
+            return Result<IEnumerable<PlanShareDto>>.Failure(PlanningErrors.Unauthorized);
+        }
+
         var planShares = await _planShareRepository.GetPlanSharesByPlanIdAsync(planId);
         var planShareDtos = planShares.Select(planShare => new PlanShareDto
         (
@@ -223,9 +264,9 @@ public class PlanningService : IPlanningService
         return Result<IEnumerable<PlanShareDto>>.Success(planShareDtos);
     }
 
-    public async Task<Result<IEnumerable<PlanShareDto>>> GetPlanSharesByUserIdAsync(int userId)
+    public async Task<Result<IEnumerable<PlanShareDto>>> GetPlanSharesBySharedByUserIdAsync(int currentUserId)
     {
-        var planShares = await _planShareRepository.GetPlanSharesBySharedByUserIdAsync(userId);
+        var planShares = await _planShareRepository.GetPlanSharesBySharedByUserIdAsync(currentUserId);
         var planShareDtos = planShares.Select(planShare => new PlanShareDto
         (
             Id: planShare.Id,
@@ -241,8 +282,14 @@ public class PlanningService : IPlanningService
         return Result<IEnumerable<PlanShareDto>>.Success(planShareDtos);
     }
 
-    public async Task<Result<PlanShareDto>> UpdatePlanShareAsync(PlanShareUpdateDto planShare)
+    public async Task<Result<PlanShareDto>> UpdatePlanShareAsync(int currentUserId, PlanShareUpdateDto planShare)
     {
+        //todo: check if user has permission to update the plan share (owner/shared with edit permission)
+        if (!await UserHasAccessToPlan(currentUserId, planShare.PlanId))
+        {
+            return Result<PlanShareDto>.Failure(PlanningErrors.Unauthorized);
+        }
+
         var existingPlanShare = await _planShareRepository.GetPlanShareByIdAsync(planShare.Id);
         if (existingPlanShare == null)
         {
@@ -276,8 +323,9 @@ public class PlanningService : IPlanningService
     }
 
 
-    public async Task<Result<bool>> DeletePlanShareAsync(int planShareId)
+    public async Task<Result<bool>> DeletePlanShareAsync(int currentUserId, int planShareId)
     {
+        //todo: check if user has permission to delete the plan share (owner/shared with edit permission)
         var planShare = await _planShareRepository.GetPlanSharesByPlanIdAsync(planShareId);
         if (planShare == null)
         {
@@ -294,7 +342,29 @@ public class PlanningService : IPlanningService
     }
     #endregion
 
+    #region private helper methods
 
+    private async Task<bool> UserHasAccessToPlan(int userId, int planId)
+    {
+        var plan = await _planRepository.GetPlanByIdAsync(planId);
+        if (plan == null)
+        {
+            return false;
+        }
+        if (plan.OwnerUserId == userId)
+        {
+            return true;
+        }
+        //check if plan is shared with user directly
+        var shares = await _planShareRepository.GetPlanSharesByPlanIdAsync(planId);
+        if (shares.Any(share => share.SharedWithUserId == userId))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    #endregion
 
 
 

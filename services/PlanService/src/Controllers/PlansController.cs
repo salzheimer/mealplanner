@@ -10,7 +10,7 @@ namespace PlanService.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class PlansController : ControllerBase
+public class PlansController : BaseController
 {
     private readonly IPlanningService _planningService;
     public PlansController(IPlanningService planningService)
@@ -19,95 +19,127 @@ public class PlansController : ControllerBase
 
     }
     //Todo: Get All plans for a user (both owned and shared[directly and in groups]) - need to add a new endpoint in the service and repository layers to support this
-    [HttpGet("plans/user/{userId:int}")]
+    [HttpGet("user-plans")]
     [Authorize]
-    public async Task<Result<IEnumerable<PlanDto>?>> GetAllUserPlans(int userId)
+    public async Task<Result<IEnumerable<PlanSummaryDto>?>> GetAllUserPlans()
     {
-        var result = await _planningService.GetPlansForUserAsync(userId);
+        var authenticatedUserId = GetAuthenticatedUserId();
+        if (authenticatedUserId == null)
+        {            return Result<IEnumerable<PlanSummaryDto>?>.Failure(MealPlanErrors.Unauthorized);
+        }
+        var result = await _planningService.GetPlansForUserAsync(authenticatedUserId.Value);
         if (!result.IsSuccess)
         {
-            return Result<IEnumerable<PlanDto>?>.Failure(result.Error);
+            return Result<IEnumerable<PlanSummaryDto>?>.Failure(result.Error);
         }
-        return Result<IEnumerable<PlanDto>?>.Success(result.Value);
+        return Result<IEnumerable<PlanSummaryDto>?>.Success(result.Value);
     }
 
-[HttpGet("plans/startdate/{startDate:datetime}")]
+    [HttpGet]
     [Authorize]
-    public async Task<Result<IEnumerable<PlanDto>?>> GetPlansByStartDate(DateTime startDate)
-    {
-        var result = await _planningService.GetPlansByStartDateAsync(startDate);
+    public async Task<Result<IEnumerable<PlanSummaryDto>?>> GetPlansByStartDate([FromQuery]DateTime startDate)
+    {   var authenticatedUserId = GetAuthenticatedUserId();
+        if (authenticatedUserId == null)        {
+            return Result<IEnumerable<PlanSummaryDto>?>.Failure(MealPlanErrors.Unauthorized);
+        }
+        var result = await _planningService.GetPlansByStartDateAsync(authenticatedUserId.Value, startDate);
         if (!result.IsSuccess)
         {
-            return Result<IEnumerable<PlanDto>?>.Failure(result.Error);
+            return Result<IEnumerable<PlanSummaryDto>?>.Failure(result.Error);
         }
-        return Result<IEnumerable<PlanDto>?>.Success(result.Value);
+        return Result<IEnumerable<PlanSummaryDto>?>.Success(result.Value);
     }
 
-    [HttpGet("plans/enddate/{endDate:datetime}")]
+    [HttpGet]
     [Authorize]
-    public async Task<Result<IEnumerable<PlanDto>?>> GetPlansByEndDate(DateTime endDate)
+    public async Task<Result<IEnumerable<PlanSummaryDto>?>> GetPlansByEndDate([FromQuery]DateTime endDate)
     {
-        var result = await _planningService.GetPlansByEndDateAsync(endDate);
-         if (!result.IsSuccess)
-        {
-            return Result<IEnumerable<PlanDto>?>.Failure(result.Error);
+        var userId = GetAuthenticatedUserId();
+        if (userId == null)        {
+            return Result<IEnumerable<PlanSummaryDto>?>.Failure(MealPlanErrors.Unauthorized);
         }
-        return Result<IEnumerable<PlanDto>?>.Success(result.Value);
+        var result = await _planningService.GetPlansByEndDateAsync(userId.Value, endDate);
+        if (!result.IsSuccess)
+        {
+            return Result<IEnumerable<PlanSummaryDto>?>.Failure(result.Error);
+        }
+        return Result<IEnumerable<PlanSummaryDto>?>.Success(result.Value);
     }
-      
+
 
     [HttpGet("{id:int}")]
     [Authorize]
-    public async Task<Result<PlanDto?>> GetById(int id)
+    public async Task<Result<PlanSummaryDto?>> GetById(int id)
     {
+        var userId = GetAuthenticatedUserId();
+        if (userId == null)        {
+            return Result<PlanSummaryDto?>.Failure(MealPlanErrors.Unauthorized);
+        }
         var result = await _planningService.GetPlanByIdAsync(id);
         if (!result.IsSuccess)
         {
-            return Result<PlanDto?>.Failure(result.Error);
+            return Result<PlanSummaryDto?>.Failure(result.Error);
         }
-        return Result<PlanDto?>.Success(result.Value);
+        return Result<PlanSummaryDto?>.Success(result.Value);
     }
 
-        [HttpGet("plans/daterange")]
+    [HttpGet]
     [Authorize]
-    public async Task<Result<IEnumerable<PlanDto>?>> GetPlansByDateRange(DateTime startDate, DateTime endDate)
+    public async Task<Result<IEnumerable<PlanSummaryDto>?>> GetPlansByDateRange([FromQuery]DateTime startDate, [FromQuery]DateTime endDate)
     {
-        var result = await _planningService.GetPlansByDateRangeAsync(startDate, endDate);
+        var userId = GetAuthenticatedUserId();
+        if (userId == null)        {
+            return Result<IEnumerable<PlanSummaryDto>?>.Failure(MealPlanErrors.Unauthorized);
+        }       
+        var result = await _planningService.GetPlansByDateRangeAsync(userId.Value, startDate, endDate);
         if (!result.IsSuccess)
         {
-            return Result<IEnumerable<PlanDto>?>.Failure(result.Error);
+            return Result<IEnumerable<PlanSummaryDto>?>.Failure(result.Error);
         }
-        return Result<IEnumerable<PlanDto>?>.Success(result.Value);
+        return Result<IEnumerable<PlanSummaryDto>?>.Success(result.Value);
     }
     [HttpPost]
     [Authorize]
-    public async Task<Result<PlanDto?>> CreatePlan(PlanCreateDto plan)
+    public async Task<Result<PlanSummaryDto?>> CreatePlan(PlanCreateDto plan)
     {
-        var result = await _planningService.CreatePlanAsync(plan);
+        var userId = GetAuthenticatedUserId();
+        if (userId == null)        {
+            return Result<PlanSummaryDto?>.Failure(MealPlanErrors.Unauthorized);
+        }
+        
+        var result = await _planningService.CreatePlanAsync(userId.Value, plan);
         if (!result.IsSuccess)
         {
-            return Result<PlanDto?>.Failure(result.Error);
+            return Result<PlanSummaryDto?>.Failure(result.Error);
         }
-        return Result<PlanDto?>.Success(result.Value);
+        return Result<PlanSummaryDto?>.Success(result.Value);
     }
 
     [HttpPut]
     [Authorize]
-    public async Task<Result<PlanDto?>> UpdatePlan(PlanUpdateDto plan)
+    public async Task<Result<PlanSummaryDto?>> UpdatePlan(PlanUpdateDto plan)
     {
-        var result = await _planningService.UpdatePlanAsync(plan);
+        var userId = GetAuthenticatedUserId();
+        if (userId == null)        {
+            return Result<PlanSummaryDto?>.Failure(MealPlanErrors.Unauthorized);
+        }   
+        var result = await _planningService.UpdatePlanAsync(userId.Value, plan);
         if (!result.IsSuccess)
         {
-            return Result<PlanDto?>.Failure(result.Error);
+            return Result<PlanSummaryDto?>.Failure(result.Error);
         }
-        return Result<PlanDto?>.Success(result.Value);
+        return Result<PlanSummaryDto?>.Success(result.Value);
     }
 
     [HttpDelete("{id:int}")]
     [Authorize]
     public async Task<Result<bool>> DeletePlan(int id)
     {
-        var result = await _planningService.DeletePlanAsync(id);
+        var userId = GetAuthenticatedUserId();
+        if (userId == null)        {
+            return Result<bool>.Failure(MealPlanErrors.Unauthorized);
+        }
+        var result = await _planningService.DeletePlanAsync(userId.Value, id);
         if (!result.IsSuccess)
         {
             return Result<bool>.Failure(result.Error);
@@ -119,7 +151,11 @@ public class PlansController : ControllerBase
     [Authorize]
     public async Task<Result<PlanShareDto?>> CreatePlanShare(PlanShareCreateDto planShare)
     {
-        var result = await _planningService.CreatePlanShareAsync(planShare);
+        var userId = GetAuthenticatedUserId();
+        if (userId == null)        {
+            return Result<PlanShareDto?>.Failure(MealPlanErrors.Unauthorized);
+        }
+        var result = await _planningService.CreatePlanShareAsync(userId.Value, planShare);
         if (!result.IsSuccess)
         {
             return Result<PlanShareDto?>.Failure(result.Error);
@@ -130,18 +166,27 @@ public class PlansController : ControllerBase
     [Authorize]
     public async Task<Result<IEnumerable<PlanShareDto>?>> GetPlanSharesByPlanId(int planId)
     {
-        var result = await _planningService.GetPlanSharesByPlanIdAsync(planId);
+        var userId = GetAuthenticatedUserId();
+        if (userId == null)        {
+            return Result<IEnumerable<PlanShareDto>?>.Failure(MealPlanErrors.Unauthorized);
+        }
+        var result = await _planningService.GetPlanSharesByPlanIdAsync(userId.Value, planId);
         if (!result.IsSuccess)
         {
             return Result<IEnumerable<PlanShareDto>?>.Failure(result.Error);
         }
         return Result<IEnumerable<PlanShareDto>?>.Success(result.Value);
     }
-    [HttpGet("share/user/{userId:int}")]
+    [HttpGet("user-shared-plans")]
     [Authorize]
-    public async Task<Result<IEnumerable<PlanShareDto>?>> GetPlanSharesByUserId(int userId)
+    public async Task<Result<IEnumerable<PlanShareDto>?>> GetPlanSharesByUserId()
     {
-        var result = await _planningService.GetPlanSharesByUserIdAsync(userId);
+        var userId = GetAuthenticatedUserId();
+        if (userId == null)
+        {
+            return Result<IEnumerable<PlanShareDto>?>.Failure(MealPlanErrors.Unauthorized);
+        }
+        var result = await _planningService.GetPlanSharesBySharedByUserIdAsync(userId.Value);
         if (!result.IsSuccess)
         {
             return Result<IEnumerable<PlanShareDto>?>.Failure(result.Error);
@@ -152,7 +197,11 @@ public class PlansController : ControllerBase
     [Authorize]
     public async Task<Result<PlanShareDto?>> UpdatePlanShare(PlanShareUpdateDto planShare)
     {
-        var result = await _planningService.UpdatePlanShareAsync(planShare);
+        var userId = GetAuthenticatedUserId();
+        if (userId == null)        {
+            return Result<PlanShareDto?>.Failure(MealPlanErrors.Unauthorized);
+        }
+        var result = await _planningService.UpdatePlanShareAsync(userId.Value, planShare);
         if (!result.IsSuccess)
         {
             return Result<PlanShareDto?>.Failure(result.Error);
@@ -164,7 +213,11 @@ public class PlansController : ControllerBase
     [Authorize]
     public async Task<Result<bool>> DeletePlanShare(int planShareId)
     {
-        var result = await _planningService.DeletePlanShareAsync(planShareId);
+        var userId = GetAuthenticatedUserId();
+        if (userId == null)        {
+            return Result<bool>.Failure(MealPlanErrors.Unauthorized);
+        }
+        var result = await _planningService.DeletePlanShareAsync(userId.Value, planShareId);
         if (!result.IsSuccess)
         {
             return Result<bool>.Failure(result.Error);

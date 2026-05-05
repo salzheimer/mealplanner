@@ -23,7 +23,7 @@ public class MealService : IMealService
 
     #region Meal operations
 
-    public async Task<Result<MealDto>> CreateMealAsync(MealCreateDto mealCreateDto)
+    public async Task<Result<MealDto>> CreateMealAsync(int userId, MealCreateDto mealCreateDto)
     {
         var meal = new Meal
         {
@@ -33,7 +33,9 @@ public class MealService : IMealService
             MealType = EnumMappings.ToEntityMealType(mealCreateDto.MealType),
             IsMultiDayMeal = mealCreateDto.IsMultiDayMeal,
             CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
+            Visibility = EnumMappings.ToEntityVisibility(mealCreateDto.Visibility ?? Shared.Models.Visibility.Private),
+            OwenedByUserId = userId
         };
         var newMeal = await _mealRepository.CreateAsync(meal);
         if (newMeal == null)
@@ -53,12 +55,16 @@ public class MealService : IMealService
         );
         return Result<MealDto>.Success(newMealDto);
     }
-    public async Task<Result<bool>> DeleteMealAsync(int id)
+    public async Task<Result<bool>> DeleteMealAsync(int userId, int id)
     {
         var meal = await _mealRepository.GetByIdAsync(id);
         if (meal == null)
         {
             return Result<bool>.Failure(MealErrors.NotFound);
+        }
+        if(meal.OwenedByUserId != userId)
+        {
+            return Result<bool>.Failure(MealErrors.Unauthorized);
         }
         var deleted = await _mealRepository.DeleteAsync(id);
         if (!deleted)
@@ -88,7 +94,7 @@ public class MealService : IMealService
         return Result<MealDto>.Success(mealDto);
     }
 
-    public async Task<Result<MealDto>> UpdateMealAsync(MealUpdateDto mealDto)
+    public async Task<Result<MealDto>> UpdateMealAsync(int userId, MealUpdateDto mealDto)
     {
         var mealEntity = new Meal
         {

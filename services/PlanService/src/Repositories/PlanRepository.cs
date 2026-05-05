@@ -48,7 +48,7 @@ public class PlanRepository : IPlanRepository
          return plan;
     }
 
-    public async Task<IEnumerable<Plan>> GetPlansForUserAsync(int userId)
+    public async Task<IEnumerable<Plan>> GetPlansByOwnerAsync(int userId)
     {
         var plans = await _context.Plans.Where(p => p.OwnerUserId == userId).ToListAsync();
 

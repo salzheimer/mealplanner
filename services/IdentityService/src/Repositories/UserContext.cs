@@ -9,6 +9,7 @@ public class UserContext : DbContext
 
     public DbSet<IdentityService.Models.User> Users { get; set; }
     public DbSet<IdentityService.Models.UserCredentials> UserCredentials { get; set; }
+    public DbSet<IdentityService.Models.ResourcePermission> ResourcePermissions { get; set; }
     public DbSet<Session> Sessions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
