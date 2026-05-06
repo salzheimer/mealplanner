@@ -35,6 +35,13 @@ public record ResourcePermissionUpdateDto(
     long Id,
     Permission Permission,
     SubjectType SubjectType,
-    int SubjectId,    
+    int SubjectId,
+    DateTime? ExpiresAt
+);
+
+public record ShareRequestDto(
+    SubjectType SubjectType,
+    int SubjectId,
+    Permission Permission,
     DateTime? ExpiresAt
 );

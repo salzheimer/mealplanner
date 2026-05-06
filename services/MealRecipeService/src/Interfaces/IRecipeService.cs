@@ -12,7 +12,6 @@ public interface IRecipeService
     Task<Result<RecipeSummaryDto>> CreateRecipeAsync(int userId, RecipeCreateDto recipe);
     Task<Result<RecipeSummaryDto>> UpdateRecipeAsync(int userId, RecipeUpdateDto recipe);
     Task<Result<bool>> DeleteRecipeAsync(int userId, int id);
-
     Task<Result<RecipeSummaryDto>> CloneRecipeAsync(int userId, int recipeId);
     //Recipe ingredient operations
     Task<Result<IEnumerable<RecipeIngredientSummaryDto>>> GetIngredientsByRecipeIdAsync(int userId, int recipeId);
@@ -24,14 +23,6 @@ public interface IRecipeService
     Task<Result<RecipeInstructionDto>> AddInstructionToRecipeAsync(int userId, RecipeInstructionCreateDto instruction);
     Task<Result<RecipeInstructionDto>> UpdateRecipeInstructionAsync(int userId, RecipeInstructionDto instruction);
     Task<Result<bool>> DeleteRecipeInstructionAsync(int userId, int id);
-    //Recipe share operations   
-   /* Task<Result<RecipeShareDto>> GetShareByIdAsync(int id);
-    Task<Result<IEnumerable<RecipeShareDto>>> GetShareByRecipeIdAsync(int userId, int recipeId);
-    Task<Result<IEnumerable<RecipeShareDto>>> GetSharesBySharedWithUserIdAsync(int userId);
-    Task<Result<IEnumerable<RecipeShareDto>>> GetSharesBySharedWithGroupIdAsync(int groupId);
-    Task<Result<RecipeShareDto>> CreateShareAsync(int userId, RecipeShareCreateDto share);
-    Task<Result<RecipeShareDto>> UpdateShareAsync(int userId, RecipeShareUpdateDto share);
-    Task<Result<bool>> DeleteShareAsync(int userId, int id);
-    */
-
+    //Recipe share operations
+    Task<Result<ResourcePermissionDto>> ShareRecipeAsync(int userId, int recipeId, ShareRequestDto request);
 }

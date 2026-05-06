@@ -20,8 +20,7 @@ public class Meal
     public MealType MealType { get; set; }
     [Column("is_multi_day_meal")]
     public bool? IsMultiDayMeal { get; set; }
-    [Column("visibility")]
-    public Visibility Visibility { get; set; }
+    
     [Column("created_at")]
     public DateTime CreatedAt { get; set; }
     [Column("updated_at")]

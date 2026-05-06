@@ -101,7 +101,6 @@ mealplanner/
 ## Shared Models (`Shared.Models` namespace)
 
 Enums mirror the postgres enum types exactly:
-- `Visibility`: Private, Shared, Group
 - `MealType`: Breakfast, Lunch, Dinner, Snack
 - `ItemType`: Recipe, Homemade, StoreBought
 - `ItemStatus`: Unknown, Pending, Confirmed

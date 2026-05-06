@@ -152,9 +152,27 @@ public class AuthController : ControllerBase
         {
             return Result<IEnumerable<ResourcePermissionDto>>.Failure(UserErrors.Unauthorized);
         }
-        
+
         var permissions = await _permissionService.GetPermissionsForSubjectAsync(Shared.Models.SubjectType.User, userId);
         return permissions;
+    }
+
+    [HttpDelete("permissions/{permissionId:long}")]
+    [Authorize]
+    public async Task<Result<bool>> RevokePermission(long permissionId)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdClaim, out var userId))
+            return Result<bool>.Failure(UserErrors.Unauthorized);
+
+        var existing = await _permissionService.GetPermissionByIdAsync(permissionId);
+        if (!existing.IsSuccess || existing.Value == null)
+            return Result<bool>.Failure(new Error("Permission.NotFound", $"Permission {permissionId} not found"));
+
+        if (existing.Value.GrantedBy != userId)
+            return Result<bool>.Failure(UserErrors.Unauthorized);
+
+        return await _permissionService.DeletePermissionAsync(permissionId);
     }
     private async Task<Result<LoginResponse>> IssueTokens(int userId, string email)
     {

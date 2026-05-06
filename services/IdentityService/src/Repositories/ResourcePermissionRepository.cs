@@ -13,6 +13,11 @@ public class ResourcePermissionRepository : IResourcePermissionRepository
         _context = context;
     }
 
+    public async Task<ResourcePermission?> GetByIdAsync(long permissionId)
+    {
+        return await _context.ResourcePermissions.FindAsync(permissionId);
+    }
+
     public async Task<ResourcePermission?> GetPermissionAsync(ResourceType resourceType, int resourceId, SubjectType subjectType, int subjectId)
     {
         return await _context.ResourcePermissions

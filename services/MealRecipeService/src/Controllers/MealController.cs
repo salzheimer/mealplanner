@@ -66,6 +66,16 @@ public class MealController : BaseController
         var deleteResult = await _mealService.DeleteMealAsync(authenticatedUserId.Value, id);
         return deleteResult;
     }
+    [HttpPost("{mealId:int}/share")]
+    [Authorize]
+    public async Task<Result<ResourcePermissionDto>> ShareMeal(int mealId, [FromBody] ShareRequestDto request)
+    {
+        var authenticatedUserId = GetAuthenticatedUserId();
+        if (authenticatedUserId == null)
+            return Result<ResourcePermissionDto>.Failure(MealErrors.Unauthorized);
+        return await _mealService.ShareMealAsync(authenticatedUserId.Value, mealId, request);
+    }
+
     [HttpGet("{mealId:int}/recipes")]
     [Authorize]
     public async Task<Result<IEnumerable<RecipeDto>>> GetRecipes(int mealId)

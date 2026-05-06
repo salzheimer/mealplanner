@@ -1,11 +1,6 @@
 namespace Shared.Models;
 
-public enum Visibility
-{
-    Private,
-    Shared,
-    Group
-}
+
 
 public enum MealType
 {

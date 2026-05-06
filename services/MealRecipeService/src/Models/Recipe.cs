@@ -26,8 +26,7 @@ public class Recipe
     public int? Servings { get; set; }
     [Column("owner_user_id")]
     public int? OwnerUserId { get; set; }
-    [Column("visibility")]
-    public Visibility Visibility { get; set; } = Visibility.Private;
+    
     [Column("created_at")]
     public DateTime CreatedAt { get; set; }
     [Column("updated_at")]

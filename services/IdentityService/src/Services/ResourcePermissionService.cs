@@ -92,6 +92,23 @@ public class ResourcePermissionService : IResourcePermissionService
         return Result<bool>.Success(true);
     }
 
+    public async Task<Result<ResourcePermissionDto?>> GetPermissionByIdAsync(long permissionId)
+    {
+        var permission = await _repository.GetByIdAsync(permissionId);
+        if (permission == null)
+            return Result<ResourcePermissionDto?>.Success(null);
+        var dto = new ResourcePermissionDto(
+            Id: permission.Id,
+            ResourceType: EnumMappings.ToDtoResourceType(permission.ResourceType),
+            ResourceId: permission.ResourceId,
+            SubjectType: EnumMappings.ToDtoSubjectType(permission.SubjectType),
+            SubjectId: permission.SubjectId,
+            Permission: EnumMappings.ToDtoPermission(permission.Permission),
+            GrantedBy: permission.GrantedBy
+        );
+        return Result<ResourcePermissionDto?>.Success(dto);
+    }
+
     public async Task<Result<ResourcePermissionDto?>> GetPermissionAsync(int userId, ResourcePermissionDto permissionDto)
     {
         var permission = await _repository.GetPermissionAsync(

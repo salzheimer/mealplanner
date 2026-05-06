@@ -37,6 +37,8 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserCredentialsRepository, UserCredentialsRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ISessionRepository, SessionRepository>();
+builder.Services.AddScoped<IResourcePermissionRepository, ResourcePermissionRepository>();
+builder.Services.AddScoped<IResourcePermissionService, ResourcePermissionService>();
 
 //Database
 var conn = builder.Configuration.GetConnectionString("Postgres");

@@ -1,57 +1,12 @@
 using MealRecipeService.Models;
-using SharedVisibility = Shared.Models.Visibility;
-using SharedPermission = Shared.Models.Permission;
-using SharedItemStatus = Shared.Models.ItemStatus;
 using SharedMealType = Shared.Models.MealType;
 using SharedItemType = Shared.Models.ItemType;
-
-using SharedMealItemType = Shared.Models.ItemType;
 
 namespace MealRecipeService.Mappings;
 
 internal static class EnumMappings
 {
-    // public static SharedVisibility ToDtoVisibility(this Visibility visibility)
-    // {
-    //     return visibility switch
-    //     {
-    //         Visibility.Private => SharedVisibility.Private,
-    //         Visibility.Shared => SharedVisibility.Shared,
-    //         Visibility.Group => SharedVisibility.Group,
-    //         _ => throw new ArgumentOutOfRangeException(nameof(visibility), $"Not expected visibility value: {visibility}")
-    //     };
-    // }
 
-    // public static Visibility ToEntityVisibility(this SharedVisibility visibility)
-    // {
-    //     return visibility switch
-    //     {
-    //         SharedVisibility.Private => Visibility.Private,
-    //         SharedVisibility.Shared => Visibility.Shared,
-    //         SharedVisibility.Group => Visibility.Group,
-    //         _ => throw new ArgumentOutOfRangeException(nameof(visibility), $"Not expected visibility value: {visibility}")
-    //     };
-    // }
-
-    // public static SharedPermission ToDtoPermission(this Permission permission)
-    // {
-    //     return permission switch
-    //     {
-    //         Permission.View => SharedPermission.View,
-    //         Permission.Edit => SharedPermission.Edit,
-    //         _ => throw new ArgumentOutOfRangeException(nameof(permission), $"Not expected permission value: {permission}")
-    //     };
-    // }
-    // public static Permission ToEntityPermission(this SharedPermission permission)
-    // {
-    //     return permission switch
-    //     {
-    //         SharedPermission.View => Permission.View,
-    //         SharedPermission.Edit => Permission.Edit,
-    //         _ => throw new ArgumentOutOfRangeException(nameof(permission), $"Not expected permission value: {permission}")
-    //     };
-    // }
-   
     public static SharedMealType ToDtoMealType(this MealType mealType)
     {        return mealType switch
         {

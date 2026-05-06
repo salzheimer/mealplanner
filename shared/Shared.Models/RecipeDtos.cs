@@ -133,7 +133,6 @@ public record MealDto(
     string? Notes,
     MealType MealType,
     bool IsMultiDayMeal,
-    Visibility? Visibility,
     DateTime? CreateAt,
     DateTime? UpdatedAt
 

@@ -1,6 +1,7 @@
 using Shared.Models;
 using Scalar.AspNetCore;
 using Microsoft.EntityFrameworkCore;
+using MealRecipeService.Clients;
 using MealRecipeService.Repositories;
 using MealRecipeService.Services;
 using MealRecipeService.Interfaces;
@@ -49,13 +50,14 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddScoped<IRecipeRepository, RecipeRepository>();
 builder.Services.AddScoped<IRecipeIngredientRepository, RecipeIngredientRepository>();
 builder.Services.AddScoped<IRecipeInstructionRepository, RecipeInstructionRepository>();
-builder.Services.AddScoped<IRecipeShareRepository, RecipeShareRepository>();
 builder.Services.AddScoped<IMealRepository, MealRepository>();
 builder.Services.AddScoped<IMealItemRepository, MealItemRepository>();
-builder.Services.AddScoped<IMealShareRepository, MealShareRepository>();
 // Services
 builder.Services.AddScoped<IRecipeService, RecipeService>();
 builder.Services.AddScoped<IMealService, MealService>();
+// HTTP clients
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IIdentityServiceClient, IdentityServiceClient>();
 
 //Database
 var conn = builder.Configuration.GetConnectionString("Postgres");

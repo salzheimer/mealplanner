@@ -159,52 +159,13 @@ public class RecipesController : BaseController
         return addedInstruction;
     }
     //Share endpoints
-    // [HttpPost("{recipeId:int}/share")]
-    // [Authorize]
-    // public async Task<Result<RecipeShareDto>> ShareRecipe(RecipeShareCreateDto share)
-    // {
-    //     var authenticatedUserId = GetAuthenticatedUserId();
-    //     if (authenticatedUserId == null)
-    //     {
-    //         return Result<RecipeShareDto>.Failure(RecipeErrors.Unauthorized);
-    //     }
-    //     var shareResult = await _recipeService.CreateShareAsync(authenticatedUserId.Value, share);
-    //     return shareResult;
-    // }
-    // [HttpGet("{recipeId:int}/sharedwith")]
-    // [Authorize]
-    // public async Task<Result<IEnumerable<RecipeShareDto>>> GetSharedRecipe(int recipeId)
-    // {
-    //     var authenticatedUserId = GetAuthenticatedUserId();
-    //     if (authenticatedUserId == null)
-    //     {
-    //         return Result<IEnumerable<RecipeShareDto>>.Failure(RecipeErrors.Unauthorized);
-    //     }
-    //     var shareResult = await _recipeService.GetShareByRecipeIdAsync(authenticatedUserId.Value, recipeId);
-    //     return shareResult;
-    // }
-    // [HttpDelete("{recipeId:int}/unshare")]
-    // [Authorize]
-    // public async Task<Result<bool>> UnshareRecipe(int recipeId)
-    // {
-    //     var authenticatedUserId = GetAuthenticatedUserId();
-    //     if (authenticatedUserId == null)
-    //     {
-    //         return Result<bool>.Failure(RecipeErrors.Unauthorized);
-    //     }
-    //     var unshareResult = await _recipeService.DeleteShareAsync(authenticatedUserId.Value, recipeId);
-    //     return unshareResult;
-    // }
-    // [HttpDelete("share/{shareId:int}")]
-    // [Authorize]
-    // public async Task<Result<bool>> DeleteShare(int shareId)
-    // {
-    //     var authenticatedUserId = GetAuthenticatedUserId();
-    //     if (authenticatedUserId == null)
-    //     {
-    //         return Result<bool>.Failure(RecipeErrors.Unauthorized);
-    //     }
-    //     var deleteResult = await _recipeService.DeleteShareAsync(authenticatedUserId.Value, shareId);
-    //     return deleteResult;
-    // }
+    [HttpPost("{recipeId:int}/share")]
+    [Authorize]
+    public async Task<Result<ResourcePermissionDto>> ShareRecipe(int recipeId, [FromBody] ShareRequestDto request)
+    {
+        var authenticatedUserId = GetAuthenticatedUserId();
+        if (authenticatedUserId == null)
+            return Result<ResourcePermissionDto>.Failure(RecipeErrors.Unauthorized);
+        return await _recipeService.ShareRecipeAsync(authenticatedUserId.Value, recipeId, request);
+    }
 }

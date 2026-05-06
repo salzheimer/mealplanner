@@ -4,6 +4,7 @@ namespace IdentityService.Interfaces;
 
 public interface IResourcePermissionRepository
 {
+    Task<ResourcePermission?> GetByIdAsync(long permissionId);
     Task<ResourcePermission?> GetPermissionAsync(ResourceType resourceType, int resourceId, SubjectType subjectType, int subjectId);
     Task<IEnumerable<ResourcePermission>> GetPermissionsForResourceAsync(ResourceType resourceType, int resourceId);
     Task<IEnumerable<ResourcePermission>> GetPermissionsForSubjectAsync(SubjectType subjectType, int subjectId);
