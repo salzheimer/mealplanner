@@ -67,7 +67,7 @@ public class RecipeService : IRecipeService
         {
             return Result<bool>.Failure(RecipeErrors.NotFound);
         }
-        if (recipe.OwnerUserId != userId)
+        if (!await UserHasEditAccessToRecipe(userId, id))
         {
             return Result<bool>.Failure(RecipeErrors.Unauthorized);
         }

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PlanService.Models;
 
-[Table("plan_share")]
+[Table("meal_plan")]
 public class MealPlan
 {
     [Key]

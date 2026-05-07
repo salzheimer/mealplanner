@@ -108,17 +108,17 @@ CREATE TABLE IF NOT EXISTS resource_permission (
 
     id BIGSERIAL PRIMARY KEY,
     resource_type   resource_type_enum NOT NULL,
-    resource_id      int
+    resource_id      int,
     subject_type     subject_type_enum NOT NULL,           
-    subject_id       int                 
+    subject_id       int,                 
     permission       permission_enum NOT NULL,
     granted_by       INT REFERENCES "user"(id) NOT NULL,
     created_at       TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    expires_at       TIMESTAMP WITH TIME ZONE NULLABLE,
-    updated_by       INT REFERENCES "user"(id)
+    expires_at       TIMESTAMP WITH TIME ZONE,
+    updated_by       INT REFERENCES "user"(id),
     updated_at       TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 
-    UNIQUE (resource_type, resource_id, subject_type, subject_id)
+    UNIQUE (resource_type, resource_id, subject_type, subject_id),
     CHECK  (expires_at IS NULL OR expires_at > created_at)
 );
 

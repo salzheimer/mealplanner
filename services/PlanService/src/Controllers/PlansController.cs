@@ -75,7 +75,7 @@ public class PlansController : BaseController
         if (userId == null)        {
             return Result<PlanSummaryDto?>.Failure(MealPlanErrors.Unauthorized);
         }
-        var result = await _planningService.GetPlanByIdAsync(id);
+        var result = await _planningService.GetPlanByIdAsync(userId.Value, id);
         if (!result.IsSuccess)
         {
             return Result<PlanSummaryDto?>.Failure(result.Error);

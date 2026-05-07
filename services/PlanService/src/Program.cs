@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PlanService.Repositories;
 using PlanService.Interfaces;
 using PlanService.Services;
+using PlanService.Clients;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,13 +46,16 @@ builder.Services.AddAuthentication(options =>
     };
 });
 //repositories
-builder.Services.AddScoped<IPlanRepository, PlanRepository>();  
+builder.Services.AddScoped<IPlanRepository, PlanRepository>();
 builder.Services.AddScoped<IPlanShareRepository, PlanShareRepository>();
-builder.Services.AddScoped<IMealPlanRepository, MealPlanRepository>();  
+builder.Services.AddScoped<IMealPlanRepository, MealPlanRepository>();
 builder.Services.AddScoped<IMealItemPlanRepository, MealItemPlanRepository>();
-//serives
+//services
 builder.Services.AddScoped<IPlanningService, PlanningService>();
-builder.Services.AddScoped<IMealPlanService, MealPlanService>();    
+builder.Services.AddScoped<IMealPlanService, MealPlanService>();
+// HTTP clients
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IIdentityServiceClient, IdentityServiceClient>();
 
 //Database
 var conn = builder.Configuration.GetConnectionString("Postgres");

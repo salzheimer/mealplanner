@@ -2,12 +2,14 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY ["shared/Shared.Models/Shared.Models.csproj", "shared/Shared.Models/"]
+COPY ["shared/Shared.Services/Shared.Services.csproj", "shared/Shared.Services/"]
 COPY ["services/PlanService/src/PlanService.csproj", "services/PlanService/src/"]
 COPY ["services/PlanService/tests/PlanService.Tests/PlanService.Tests.csproj", "services/PlanService/tests/PlanService.Tests/"]
 RUN dotnet restore "services/PlanService/src/PlanService.csproj"
 RUN dotnet restore "services/PlanService/tests/PlanService.Tests/PlanService.Tests.csproj"
 
 COPY ["shared/Shared.Models/", "shared/Shared.Models/"]
+COPY ["shared/Shared.Services/", "shared/Shared.Services/"]
 COPY ["services/PlanService/src/", "services/PlanService/src/"]
 COPY ["services/PlanService/tests/PlanService.Tests/", "services/PlanService/tests/PlanService.Tests/"]
 

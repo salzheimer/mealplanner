@@ -21,6 +21,11 @@ public class MealItemPlanRepository : IMealItemPlanRepository
         return mealItemPlan;
     }
 
+    public async Task<MealItemPlan?> GetByIdAsync(int mealItemPlanId)
+    {
+        return await _context.MealItemPlans.FindAsync(mealItemPlanId);
+    }
+
     public async Task<IEnumerable<MealItemPlan>> GetMealItemsForMealPlanAsync(int mealPlanId)
     {
         return await _context.MealItemPlans.Where(mip => mip.MealPlanId == mealPlanId).ToListAsync();
