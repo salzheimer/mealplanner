@@ -26,9 +26,9 @@ public class IdentityServiceClient : IIdentityServiceClient
         var client = ServiceClient.CreateClient(_baseUrl, GetBearerToken());
         var response = await client.PostAsJsonAsync("/api/auth/grant-permission", permission);
         if (!response.IsSuccessStatusCode)
-            return Result<ResourcePermissionDto>.Failure(new Error("IdentityService.Error", "Failed to grant permission"));
+            return Result<ResourcePermissionDto>.Failure(new Error("IdentityService.Error", "Failed to grant permission", ErrorType.Unexpected));
         var result = await response.Content.ReadFromJsonAsync<Result<ResourcePermissionDto>>();
-        return result ?? Result<ResourcePermissionDto>.Failure(new Error("IdentityService.Error", "Empty response"));
+        return result ?? Result<ResourcePermissionDto>.Failure(new Error("IdentityService.Error", "Empty response", ErrorType.Unexpected));
     }
 
     public async Task<Result<IEnumerable<ResourcePermissionDto>>> GetPermissionsForResourceAsync(ResourceType resourceType, int resourceId)
@@ -36,9 +36,9 @@ public class IdentityServiceClient : IIdentityServiceClient
         var client = ServiceClient.CreateClient(_baseUrl, GetBearerToken());
         var response = await client.GetAsync($"/api/auth/resource-permissions?resourceType={resourceType}&resourceId={resourceId}");
         if (!response.IsSuccessStatusCode)
-            return Result<IEnumerable<ResourcePermissionDto>>.Failure(new Error("IdentityService.Error", "Failed to get permissions"));
+            return Result<IEnumerable<ResourcePermissionDto>>.Failure(new Error("IdentityService.Error", "Failed to get permissions", ErrorType.Unexpected));
         var result = await response.Content.ReadFromJsonAsync<Result<IEnumerable<ResourcePermissionDto>>>();
-        return result ?? Result<IEnumerable<ResourcePermissionDto>>.Failure(new Error("IdentityService.Error", "Empty response"));
+        return result ?? Result<IEnumerable<ResourcePermissionDto>>.Failure(new Error("IdentityService.Error", "Empty response", ErrorType.Unexpected));
     }
 
     public async Task<Result<bool>> RevokePermissionAsync(long permissionId)
@@ -46,8 +46,8 @@ public class IdentityServiceClient : IIdentityServiceClient
         var client = ServiceClient.CreateClient(_baseUrl, GetBearerToken());
         var response = await client.DeleteAsync($"/api/auth/permissions/{permissionId}");
         if (!response.IsSuccessStatusCode)
-            return Result<bool>.Failure(new Error("IdentityService.Error", "Failed to revoke permission"));
+            return Result<bool>.Failure(new Error("IdentityService.Error", "Failed to revoke permission", ErrorType.Unexpected));
         var result = await response.Content.ReadFromJsonAsync<Result<bool>>();
-        return result ?? Result<bool>.Failure(new Error("IdentityService.Error", "Empty response"));
+        return result ?? Result<bool>.Failure(new Error("IdentityService.Error", "Empty response", ErrorType.Unexpected));
     }
 }

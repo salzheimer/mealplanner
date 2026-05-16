@@ -38,7 +38,7 @@ public class ResourcePermissionService : IResourcePermissionService
 
         if (createdPermission == null)
         {
-            return Result<ResourcePermissionDto>.Failure(new Error("GrantAccess.Failed", $"Failed to create access to resource {permission.ResourceType} with id {permission.ResourceId} for subject {permission.SubjectType} with id {permission.SubjectId}"));
+            return Result<ResourcePermissionDto>.Failure(new Error("GrantAccess.Failed", $"Failed to create access to resource {permission.ResourceType} with id {permission.ResourceId} for subject {permission.SubjectType} with id {permission.SubjectId}", ErrorType.BadRequest));
         }
         var resultDto = new ResourcePermissionDto(
             createdPermission.Id,
@@ -68,7 +68,7 @@ public class ResourcePermissionService : IResourcePermissionService
         var updatedPermissions = await _repository.UpdatePermissionAsync(entity);
         if (!updatedPermissions)
         {
-            return Result<ResourcePermissionDto>.Failure(new Error("UpdatePermission.Failed", $"Failed to update permission with id {permission.Id}"));
+            return Result<ResourcePermissionDto>.Failure(new Error("UpdatePermission.Failed", $"Failed to update permission with id {permission.Id}", ErrorType.BadRequest));
         }
         var resultDto = new ResourcePermissionDto(
             Id: entity.Id,
@@ -87,7 +87,7 @@ public class ResourcePermissionService : IResourcePermissionService
         var result = await _repository.DeletePermissionAsync(permissionId);
         if (!result)
         {
-            return Result<bool>.Failure(new Error("DeletePermission.Failed", $"Failed to delete permission with id {permissionId}"));
+            return Result<bool>.Failure(new Error("DeletePermission.Failed", $"Failed to delete permission with id {permissionId}", ErrorType.BadRequest));
         }
         return Result<bool>.Success(true);
     }

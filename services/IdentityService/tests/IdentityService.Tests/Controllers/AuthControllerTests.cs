@@ -265,7 +265,7 @@ public class AuthControllerTests
     {
         var createDto = new ResourcePermissionCreateDto(ResourceType.Recipe, 1, SubjectType.User, 2, Permission.View, UserId, null);
         _permissionService.Setup(s => s.AddPermissionAsync(createDto))
-            .ReturnsAsync(Result<ResourcePermissionDto>.Failure(new Error("Permission.UnableToCreate", "Failed to create.")));
+            .ReturnsAsync(Result<ResourcePermissionDto>.Failure(new Error("Permission.UnableToCreate", "Failed to create.", ErrorType.BadRequest)));
 
         var result = await _controller.GrantPermission(createDto);
 

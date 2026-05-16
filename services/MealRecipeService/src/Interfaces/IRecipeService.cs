@@ -17,12 +17,12 @@ public interface IRecipeService
     Task<Result<IEnumerable<RecipeIngredientSummaryDto>>> GetIngredientsByRecipeIdAsync(int userId, int recipeId);
     Task<Result<RecipeIngredientSummaryDto>> AddIngredientToRecipeAsync(int userId, RecipeIngredientCreateDto ingredient);
     Task<Result<RecipeIngredientSummaryDto>> UpdateRecipeIngredientAsync(int userId, RecipeIngredientSummaryDto ingredient);
-    Task<Result<bool>> DeleteRecipeIngredientAsync(int userId, int id);
+    Task<Result<bool>> DeleteRecipeIngredientAsync(int userId, int recipeId, int ingredientId);
     //Recipe instruction operations
     Task<Result<IEnumerable<RecipeInstructionDto>>> GetInstructionsByRecipeIdAsync(int userId, int recipeId);
     Task<Result<RecipeInstructionDto>> AddInstructionToRecipeAsync(int userId, RecipeInstructionCreateDto instruction);
     Task<Result<RecipeInstructionDto>> UpdateRecipeInstructionAsync(int userId, RecipeInstructionDto instruction);
-    Task<Result<bool>> DeleteRecipeInstructionAsync(int userId, int id);
+    Task<Result<bool>> DeleteRecipeInstructionAsync(int userId, int recipeId, int instructionId);
     //Recipe share operations
     Task<Result<ResourcePermissionDto>> ShareRecipeAsync(int userId, int recipeId, ShareRequestDto request);
 }

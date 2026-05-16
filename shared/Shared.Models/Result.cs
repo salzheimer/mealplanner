@@ -7,7 +7,7 @@ public class Result<T>
     public bool IsSuccess { get; }
     public T? Value { get; }
     public Error Error { get; }
-
+    
     private Result(bool isSuccess, T? value, Error error)
     {
         IsSuccess = isSuccess;
@@ -18,10 +18,19 @@ public class Result<T>
     public static Result<T> Success(T value) => new(true, value, Error.None);
     public static Result<T> Failure(Error error) => new(false, default, error);
 }
-public sealed record Error(string Code, string Description, string? StackTrace =null)
+public enum ErrorType   
+    {
+        Failure,
+        Unauthorized,
+        NotFound,
+        InvalidInput,
+        BadRequest,
+        Unexpected  
+    }
+public sealed record Error(string Code, string Description, ErrorType Type, string? StackTrace =null)
 {
-    public static readonly Error None= new(string.Empty,string.Empty);
+    public static readonly Error None= new(string.Empty,string.Empty, ErrorType.Failure);
 
-    public static Error Unexpected(string code,string description)=> new (code,description, Environment.StackTrace);
+    public static Error Unexpected(string code,string description)=> new (code,description,ErrorType.Unexpected, Environment.StackTrace);
 
 }

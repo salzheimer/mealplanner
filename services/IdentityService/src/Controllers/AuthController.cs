@@ -167,7 +167,7 @@ public class AuthController : ControllerBase
 
         var existing = await _permissionService.GetPermissionByIdAsync(permissionId);
         if (!existing.IsSuccess || existing.Value == null)
-            return Result<bool>.Failure(new Error("Permission.NotFound", $"Permission {permissionId} not found"));
+            return Result<bool>.Failure(new Error("Permission.NotFound", $"Permission {permissionId} not found", ErrorType.NotFound));
 
         if (existing.Value.GrantedBy != userId)
             return Result<bool>.Failure(UserErrors.Unauthorized);

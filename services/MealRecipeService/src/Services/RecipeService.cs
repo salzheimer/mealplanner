@@ -119,6 +119,7 @@ public class RecipeService : IRecipeService
             CookTime = recipe.CookTime,
             PrepTime = recipe.PrepTime,
             Servings = recipe.Servings,
+            OwnerUserId = recipe.OwnerUserId,
             UpdatedAt = DateTime.UtcNow,
             UpdatedBy = userId
         };
@@ -344,14 +345,14 @@ public class RecipeService : IRecipeService
         var resultDto = new RecipeIngredientSummaryDto(ingredientEntity.Id, ingredientEntity.RecipeId, ingredientEntity.Name, ingredientEntity.Amount, ingredientEntity.MeasurementType, ingredientEntity.Note);
         return Result<RecipeIngredientSummaryDto>.Success(resultDto);
     }
-    public async Task<Result<bool>> DeleteRecipeIngredientAsync(int userId, int id)
+    public async Task<Result<bool>> DeleteRecipeIngredientAsync(int userId, int recipeId, int ingredientId)
     {
-        if (!await UserHasEditAccessToRecipe(userId, id))
+        if (!await UserHasEditAccessToRecipe(userId, recipeId))
         {
             return Result<bool>.Failure(RecipeErrors.Unauthorized);
         }
 
-        var deleteResult = await _ingredientRepository.DeleteAsync(id);
+        var deleteResult = await _ingredientRepository.DeleteAsync(ingredientId);
         if (!deleteResult)
         {
             return Result<bool>.Failure(RecipeIngredientErrors.UnableToDelete);
@@ -396,7 +397,7 @@ public class RecipeService : IRecipeService
         var instructions = await _instructionRepository.GetByRecipeIdAsync(recipeId);
         if (instructions == null || !instructions.Any())
         {
-            return Result<IEnumerable<RecipeInstructionDto>>.Failure(RecipeInstructionErrors.NotFound);
+            return Result<IEnumerable<RecipeInstructionDto>>.Success(Enumerable.Empty<RecipeInstructionDto>());
         }
         var instructionDtos = instructions.Select(i => new RecipeInstructionDto(i.Id, i.RecipeId, i.StepNumber, i.Description, i.Note));
         return Result<IEnumerable<RecipeInstructionDto>>.Success(instructionDtos);
@@ -427,13 +428,13 @@ public class RecipeService : IRecipeService
         var resultDto = new RecipeInstructionDto(instructionEntity.Id, instructionEntity.RecipeId, instructionEntity.StepNumber, instructionEntity.Description, instructionEntity.Note);
         return Result<RecipeInstructionDto>.Success(resultDto);
     }
-    public async Task<Result<bool>> DeleteRecipeInstructionAsync(int userId, int id)
+    public async Task<Result<bool>> DeleteRecipeInstructionAsync(int userId, int recipeId, int instructionId)
     {
-        if (!await UserHasEditAccessToRecipe(userId, id))
+        if (!await UserHasEditAccessToRecipe(userId, recipeId))
         {
             return Result<bool>.Failure(RecipeErrors.Unauthorized);
         }
-        var deleteResult = await _instructionRepository.DeleteAsync(id);
+        var deleteResult = await _instructionRepository.DeleteAsync(instructionId);
         if (!deleteResult)
         {
             return Result<bool>.Failure(RecipeInstructionErrors.UnableToDelete);

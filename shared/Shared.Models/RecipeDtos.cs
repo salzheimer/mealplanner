@@ -50,7 +50,8 @@ public record RecipeUpdateDto(
     string? OriginalSource,
     TimeSpan? CookTime,
     TimeSpan? PrepTime,
-    int? Servings
+    int? Servings,
+    int? OwnerUserId    
 );
 
 //Recipe ingredient DTOs

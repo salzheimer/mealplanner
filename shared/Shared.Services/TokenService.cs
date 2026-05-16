@@ -72,7 +72,7 @@ public class TokenService
         }
         catch (Exception ex)
         {
-            return Result.Failure(new Error("Token.Failure",ex.Message));
+            return Result.Failure(new Error("Token.Failure",ex.Message,ErrorType.Failure));
         }
     }
 }
