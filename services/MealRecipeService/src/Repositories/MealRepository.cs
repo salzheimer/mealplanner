@@ -18,15 +18,18 @@ public class MealRepository : Interfaces.IMealRepository
         return await _context.Meals.FindAsync(id);
     }
 
-    public async Task<IEnumerable<Meal>> ListAllAsync()
+    public async Task<IEnumerable<Meal>> GetByOwnerIdAsync(int userId)
     {
-        return await _context.Meals.ToListAsync();
+        return await _context.Meals.Where(m => m.OwnerUserId == userId).ToListAsync();
     }
-
+    public async Task<IEnumerable<Meal>> GetByIdsAsync(HashSet<int> sharedMealIds)
+    {
+        return await _context.Meals.Where(r => sharedMealIds.Contains(r.Id)).ToListAsync();
+    }
     public async Task<Meal?> CreateAsync(Meal meal)
     {
         _context.Meals.Add(meal);
-       var result = await _context.SaveChangesAsync();
+        var result = await _context.SaveChangesAsync();
         if (result <= 0) return null!;
         return meal;
     }
@@ -47,8 +50,8 @@ public class MealRepository : Interfaces.IMealRepository
         }
         _context.Meals.Remove(meal);
         var result = await _context.SaveChangesAsync();
-        return result > 0;  
+        return result > 0;
     }
 
-    
+
 }

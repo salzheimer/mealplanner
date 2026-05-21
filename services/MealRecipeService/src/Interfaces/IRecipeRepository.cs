@@ -9,5 +9,5 @@ public interface IRecipeRepository
     Task<Recipe?> CreateAsync(Recipe recipe);
     Task<bool> UpdateAsync(Recipe recipe);
     Task<bool> DeleteAsync(int id);
-    Task<IEnumerable<Recipe>> GetByIdsAsync(HashSet<int?> sharedRecipeIds);
+    Task<IEnumerable<Recipe>> GetByIdsAsync(HashSet<int> sharedRecipeIds);
 }

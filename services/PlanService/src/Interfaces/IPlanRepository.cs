@@ -9,6 +9,7 @@ public interface IPlanRepository
     Task<IEnumerable<Plan>> GetPlansByStartDateAsync(DateTime startDate);
     Task<IEnumerable<Plan>> GetPlansByEndDateAsync(DateTime endDate);
     Task<IEnumerable<Plan>> GetPlansByDateRangeAsync(DateTime startDate, DateTime endDate);
+    Task<IEnumerable<Plan>> GetByIdsAsync(HashSet<int> sharedPlanIds);
     Task<bool> UpdatePlanAsync(Plan plan);
     Task<bool> DeletePlanAsync(int id);
 }

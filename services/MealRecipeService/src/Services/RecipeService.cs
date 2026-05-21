@@ -3,6 +3,7 @@ using MealRecipeService.Mappings;
 using MealRecipeService.Models;
 using MealRecipeService.Interfaces;
 using Shared.Models;
+using Microsoft.AspNetCore.Mvc;
 
 namespace MealRecipeService.Services;
 
@@ -50,13 +51,14 @@ public class RecipeService : IRecipeService
             Id: createdRecipe.Id,
             Name: createdRecipe.Name,
             Description: createdRecipe.Description,
+            Notes: createdRecipe.Notes,
             Ranking: createdRecipe.Ranking,
             OriginalSource: createdRecipe.OriginalSource,
             CookTime: createdRecipe.CookTime,
             PrepTime: createdRecipe.PrepTime,
             Servings: createdRecipe.Servings,
             OwnerUserId: createdRecipe.OwnerUserId
-         );
+        );
         return Result<RecipeSummaryDto>.Success(recipeDto);
     }
 
@@ -84,13 +86,21 @@ public class RecipeService : IRecipeService
     {
         var recipes = await _recipeRepository.GetByOwnerIdAsync(userId);
 
-        var sharedPermissions = await _identityClient.GetPermissionsForResourceAsync(ResourceType.Recipe, 0);
-        // TODO: query permissions by subject (userId) once subject-scoped endpoint is wired into client
+        //get recipes shared with user
+        var sharedPermissions = await _identityClient.GetUserPermissionsAsync(userId);
+        var sharedRecipeIds = sharedPermissions.IsSuccess
+            ? sharedPermissions.Value!.Where(p => p.ResourceType == ResourceType.Recipe).Select(p => p.ResourceId).ToHashSet()
+            : new HashSet<int>();
+
+        var sharedRecipes = sharedRecipeIds.Any() ? await _recipeRepository.GetByIdsAsync(sharedRecipeIds) : Enumerable.Empty<Recipe>();
+        recipes = recipes.Concat(sharedRecipes);
+
 
         var recipeDtos = recipes.Select(r => new RecipeSummaryDto(
             Id: r.Id,
             Name: r.Name,
             Description: r.Description,
+            Notes: r.Notes,
             Ranking: r.Ranking,
             OriginalSource: r.OriginalSource,
             CookTime: r.CookTime,
@@ -100,17 +110,43 @@ public class RecipeService : IRecipeService
         ));
         return Result<IEnumerable<RecipeSummaryDto>>.Success(recipeDtos);
     }
-
-    public async Task<Result<RecipeSummaryDto>> UpdateRecipeAsync(int userId, RecipeUpdateDto recipe)
+    public async Task<Result<IEnumerable<RecipeSummaryDto>>> GetRecipesSharedWithMeAsync(int userId)
     {
-        if (!await UserHasEditAccessToRecipe(userId, recipe.Id))
+
+        //get recipes shared with user
+        var sharedPermissions = await _identityClient.GetUserPermissionsAsync(userId);
+        var sharedRecipeIds = sharedPermissions.IsSuccess
+            ? sharedPermissions.Value!.Where(p => p.ResourceType == ResourceType.Recipe).Select(p => p.ResourceId).ToHashSet()
+            : new HashSet<int>();
+
+        var sharedRecipes = sharedRecipeIds.Any() ? await _recipeRepository.GetByIdsAsync(sharedRecipeIds) : Enumerable.Empty<Recipe>();
+
+
+
+        var recipeDtos = sharedRecipes.Select(r => new RecipeSummaryDto(
+            Id: r.Id,
+            Name: r.Name,
+            Description: r.Description,
+            Notes: r.Notes,
+            Ranking: r.Ranking,
+            OriginalSource: r.OriginalSource,
+            CookTime: r.CookTime,
+            PrepTime: r.PrepTime,
+            Servings: r.Servings,
+            OwnerUserId: r.OwnerUserId
+        ));
+        return Result<IEnumerable<RecipeSummaryDto>>.Success(recipeDtos);
+    }
+    public async Task<Result<RecipeSummaryDto>> UpdateRecipeAsync(int userId, int recipeId,RecipeUpdateDto recipe)
+    {
+        if (!await UserHasEditAccessToRecipe(userId, recipeId))
         {
             return Result<RecipeSummaryDto>.Failure(RecipeErrors.Unauthorized);
         }
 
         var recipeEntity = new Recipe
         {
-            Id = recipe.Id,
+            Id = recipeId,
             Name = recipe.Name,
             Description = recipe.Description,
             Notes = recipe.Notes,
@@ -133,6 +169,7 @@ public class RecipeService : IRecipeService
             Id: recipeEntity.Id,
             Name: recipeEntity.Name,
             Description: recipeEntity.Description,
+            Notes: recipeEntity.Notes,
             Ranking: recipeEntity.Ranking,
             OriginalSource: recipeEntity.OriginalSource,
             CookTime: recipeEntity.CookTime,
@@ -143,19 +180,51 @@ public class RecipeService : IRecipeService
         return Result<RecipeSummaryDto>.Success(resultDto);
     }
 
-    public async Task<Result<RecipeDto>> GetRecipeByIdAsync(int userId, int id)
+    public async Task<Result<RecipeSummaryDto>> GetRecipeByIdAsync(int userId, int id)
     {
         var recipe = await _recipeRepository.GetByIdAsync(id);
         if (recipe == null)
         {
-            return Result<RecipeDto>.Failure(RecipeErrors.NotFound);
+            return Result<RecipeSummaryDto>.Failure(RecipeErrors.NotFound);
         }
         if (!await UserHasAccessToRecipe(userId, recipe.Id))
         {
-            return Result<RecipeDto>.Failure(RecipeErrors.Unauthorized);
+            return Result<RecipeSummaryDto>.Failure(RecipeErrors.Unauthorized);
         }
 
-        var recipeDto = new RecipeDto(
+        var recipeDto = new RecipeSummaryDto(
+            Id: recipe.Id,
+            Name: recipe.Name,
+            Description: recipe.Description,
+            Notes: recipe.Notes,
+            Ranking: recipe.Ranking,
+            OriginalSource: recipe.OriginalSource,
+            CookTime: recipe.CookTime,
+            PrepTime: recipe.PrepTime,
+            Servings: recipe.Servings,
+            OwnerUserId: recipe.OwnerUserId
+
+        );
+        return Result<RecipeSummaryDto>.Success(recipeDto);
+    }
+
+    public async Task<Result<RecipeDetailDto>> GetRecipeDetailAsync(int userId, int recipeId)
+    {
+        var recipe = await _recipeRepository.GetByIdAsync(recipeId);
+        if (recipe == null)
+        {
+            return Result<RecipeDetailDto>.Failure(RecipeErrors.NotFound);
+        }
+        if (!await UserHasAccessToRecipe(userId, recipe.Id))
+        {
+            return Result<RecipeDetailDto>.Failure(RecipeErrors.Unauthorized);
+        }
+
+        var ingredients = await GetIngredientsByRecipeIdAsync(userId, recipe.Id);
+
+        var instructions = await GetInstructionsByRecipeIdAsync(userId, recipe.Id);
+
+        var recipeDto = new RecipeDetailDto(
             Id: recipe.Id,
             Name: recipe.Name,
             Description: recipe.Description,
@@ -166,12 +235,13 @@ public class RecipeService : IRecipeService
             PrepTime: recipe.PrepTime,
             Servings: recipe.Servings,
             OwnerUserId: recipe.OwnerUserId,
-            Ingredients: null,
-            Instructions: null
-        );
-        return Result<RecipeDto>.Success(recipeDto);
-    }
+            Ingredients: ingredients.IsSuccess ? ingredients.Value : null,
+            Instructions: instructions.IsSuccess ? instructions.Value : null
 
+        );
+
+        return Result<RecipeDetailDto>.Success(recipeDto);
+    }
     public async Task<Result<IEnumerable<RecipeSummaryDto>>> GetRecipesByOwnerIdAsync(int userId)
     {
         var recipes = await _recipeRepository.GetByOwnerIdAsync(userId);
@@ -179,6 +249,7 @@ public class RecipeService : IRecipeService
             Id: r.Id,
             Name: r.Name,
             Description: r.Description,
+            Notes: r.Notes,
             Ranking: r.Ranking,
             OriginalSource: r.OriginalSource,
             CookTime: r.CookTime,
@@ -212,7 +283,7 @@ public class RecipeService : IRecipeService
             CookTime = recipe.CookTime,
             PrepTime = recipe.PrepTime,
             Servings = recipe.Servings,
-            OwnerUserId = userId,            
+            OwnerUserId = userId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             CreatedBy = userId,
@@ -267,6 +338,7 @@ public class RecipeService : IRecipeService
             Id: createdRecipe.Id,
             Name: createdRecipe.Name,
             Description: createdRecipe.Description,
+            Notes: createdRecipe.Notes,
             Ranking: createdRecipe.Ranking,
             OriginalSource: createdRecipe.OriginalSource,
             CookTime: createdRecipe.CookTime,
@@ -280,15 +352,15 @@ public class RecipeService : IRecipeService
     #endregion
 
     #region Recipe ingredient operations
-    public async Task<Result<RecipeIngredientSummaryDto>> AddIngredientToRecipeAsync(int userId, RecipeIngredientCreateDto ingredient)
+    public async Task<Result<RecipeIngredientSummaryDto>> AddIngredientToRecipeAsync(int userId, int recipeId, RecipeIngredientCreateDto ingredient)
     {
-        if (!await UserHasEditAccessToRecipe(userId, ingredient.RecipeId))
+        if (!await UserHasEditAccessToRecipe(userId, recipeId))
         {
             return Result<RecipeIngredientSummaryDto>.Failure(RecipeErrors.Unauthorized);
         }
         var newIngredient = new RecipeIngredient
         {
-            RecipeId = ingredient.RecipeId,
+            RecipeId = recipeId,
             Name = ingredient.Name,
             Amount = ingredient.Amount,
             MeasurementType = ingredient.MeasurementType,
@@ -320,16 +392,16 @@ public class RecipeService : IRecipeService
         return Result<IEnumerable<RecipeIngredientSummaryDto>>.Success(ingredientDtos);
     }
 
-    public async Task<Result<RecipeIngredientSummaryDto>> UpdateRecipeIngredientAsync(int userId, RecipeIngredientSummaryDto ingredient)
+    public async Task<Result<RecipeIngredientSummaryDto>> UpdateRecipeIngredientAsync(int userId, int ingredientId, int recipeId, RecipeIngredientUpdateDto ingredient)
     {
-        if (!await UserHasEditAccessToRecipe(userId, ingredient.RecipeId))
+        if (!await UserHasEditAccessToRecipe(userId, recipeId))
         {
             return Result<RecipeIngredientSummaryDto>.Failure(RecipeErrors.Unauthorized);
         }
         var ingredientEntity = new RecipeIngredient
         {
-            Id = ingredient.Id,
-            RecipeId = ingredient.RecipeId,
+            Id = ingredientId,
+            RecipeId = recipeId,
             Name = ingredient.Name,
             Amount = ingredient.Amount,
             MeasurementType = ingredient.MeasurementType,
@@ -362,15 +434,16 @@ public class RecipeService : IRecipeService
     #endregion
 
     #region Recipe instruction operations
-    public async Task<Result<RecipeInstructionDto>> AddInstructionToRecipeAsync(int userId, RecipeInstructionCreateDto instruction)
+    
+    public async Task<Result<RecipeInstructionDto>> AddInstructionToRecipeAsync(int userId, int recipeId, RecipeInstructionCreateDto instruction)
     {
-        if (!await UserHasEditAccessToRecipe(userId, instruction.RecipeId))
+        if (!await UserHasEditAccessToRecipe(userId, recipeId))
         {
             return Result<RecipeInstructionDto>.Failure(RecipeErrors.Unauthorized);
         }
         var newInstruction = new RecipeInstruction
         {
-            RecipeId = instruction.RecipeId,
+            RecipeId = recipeId,
             StepNumber = instruction.StepNumber,
             Description = instruction.Description,
             Note = instruction.Note,
@@ -388,6 +461,7 @@ public class RecipeService : IRecipeService
         var resultDto = new RecipeInstructionDto(createdInstruction.Id, createdInstruction.RecipeId, createdInstruction.StepNumber, createdInstruction.Description, createdInstruction.Note);
         return Result<RecipeInstructionDto>.Success(resultDto);
     }
+    
     public async Task<Result<IEnumerable<RecipeInstructionDto>>> GetInstructionsByRecipeIdAsync(int userId, int recipeId)
     {
         if (!await UserHasAccessToRecipe(userId, recipeId))
@@ -402,17 +476,18 @@ public class RecipeService : IRecipeService
         var instructionDtos = instructions.Select(i => new RecipeInstructionDto(i.Id, i.RecipeId, i.StepNumber, i.Description, i.Note));
         return Result<IEnumerable<RecipeInstructionDto>>.Success(instructionDtos);
     }
-    public async Task<Result<RecipeInstructionDto>> UpdateRecipeInstructionAsync(int userId, RecipeInstructionDto instruction)
+    
+    public async Task<Result<RecipeInstructionDto>> UpdateRecipeInstructionAsync(int userId, int recipeId, int instructionId, RecipeInstructionUpdateDto instruction)
     {
-        if (!await UserHasEditAccessToRecipe(userId, instruction.RecipeId))
+        if (!await UserHasEditAccessToRecipe(userId, recipeId))
         {
             return Result<RecipeInstructionDto>.Failure(RecipeErrors.Unauthorized);
         }
 
         var instructionEntity = new RecipeInstruction
         {
-            Id = instruction.Id,
-            RecipeId = instruction.RecipeId,
+            Id = instructionId,
+            RecipeId = recipeId,
             StepNumber = instruction.StepNumber,
             Description = instruction.Description,
             Note = instruction.Note,

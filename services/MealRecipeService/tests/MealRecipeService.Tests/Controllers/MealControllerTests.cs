@@ -40,14 +40,14 @@ public class MealControllerTests
 
     private static MealDto MakeMeal(int id = 1) => new(
         id, "Monday Dinner", "A hearty dinner", null, MealType.Dinner, false,
-        DateTime.UtcNow, DateTime.UtcNow
+        UserId, DateTime.UtcNow, UserId, DateTime.UtcNow
     );
 
     private static MealItemDto MakeMealItem(int id = 1, int mealId = 1, int recipeId = 1) => new(
         id, "Pasta Carbonara", mealId, recipeId, ItemType.Recipe
     );
 
-    private static RecipeDto MakeRecipe(int id = 1) => new(
+    private static RecipeDetailDto MakeRecipe(int id = 1) => new(
         id, "Pasta Carbonara", null, null, null, null, null, null, null, 1,
         null, null
     );
@@ -88,7 +88,7 @@ public class MealControllerTests
     [Fact]
     public async Task CreateMeal_ValidMeal_Returns200WithMeal()
     {
-        var createDto = new MealCreateDto(MealType.Dinner, "Monday Dinner", null, null, null);
+        var createDto = new MealCreateDto(MealType.Dinner, "Monday Dinner", null, null, false);
         _mealService.Setup(s => s.CreateMealAsync(UserId, createDto))
             .ReturnsAsync(Result<MealDto>.Success(MakeMeal(1)));
 
@@ -103,7 +103,7 @@ public class MealControllerTests
     [Fact]
     public async Task CreateMeal_ServiceFailure_Returns400()
     {
-        var createDto = new MealCreateDto(MealType.Dinner, "", null, null, null);
+        var createDto = new MealCreateDto(MealType.Dinner, "", null, null, false);
         _mealService.Setup(s => s.CreateMealAsync(UserId, createDto))
             .ReturnsAsync(Result<MealDto>.Failure(MealErrors.UnableToCreate));
 
@@ -117,7 +117,7 @@ public class MealControllerTests
     [Fact]
     public async Task UpdateMeal_ExistingMeal_Returns200WithMeal()
     {
-        var updateDto = new MealUpdateDto(1, MealType.Dinner, "Updated Dinner", null, null, null, null);
+        var updateDto = new MealUpdateDto(1, MealType.Dinner, "Updated Dinner", null, null, false, null);
         _mealService.Setup(s => s.UpdateMealAsync(UserId, updateDto))
             .ReturnsAsync(Result<MealDto>.Success(MakeMeal(1)));
 
@@ -131,7 +131,7 @@ public class MealControllerTests
     [Fact]
     public async Task UpdateMeal_NonExistentMeal_Returns400()
     {
-        var updateDto = new MealUpdateDto(999, MealType.Dinner, "Updated Dinner", null, null, null, null);
+        var updateDto = new MealUpdateDto(999, MealType.Dinner, "Updated Dinner", null, null, false, null);
         _mealService.Setup(s => s.UpdateMealAsync(UserId, updateDto))
             .ReturnsAsync(Result<MealDto>.Failure(MealErrors.UnableToUpdate));
 
@@ -240,15 +240,15 @@ public class MealControllerTests
         var mealItems = new List<MealItemDto> { MakeMealItem(1, 1, 1), MakeMealItem(2, 1, 2) };
         _mealService.Setup(s => s.GetMealItemByMealIdAsync(UserId, 1))
             .ReturnsAsync(Result<IEnumerable<MealItemDto>>.Success(mealItems));
-        _recipeService.Setup(s => s.GetRecipeByIdAsync(UserId, 1))
-            .ReturnsAsync(Result<RecipeDto>.Success(MakeRecipe(1)));
-        _recipeService.Setup(s => s.GetRecipeByIdAsync(UserId, 2))
-            .ReturnsAsync(Result<RecipeDto>.Success(MakeRecipe(2)));
+        _recipeService.Setup(s => s.GetRecipeDetailAsync(UserId, 1))
+            .ReturnsAsync(Result<RecipeDetailDto>.Success(MakeRecipe(1)));
+        _recipeService.Setup(s => s.GetRecipeDetailAsync(UserId, 2))
+            .ReturnsAsync(Result<RecipeDetailDto>.Success(MakeRecipe(2)));
 
         var result = await _controller.GetRecipes(1);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsAssignableFrom<IEnumerable<RecipeDto>>(ok.Value);
+        var value = Assert.IsAssignableFrom<IEnumerable<RecipeDetailDto>>(ok.Value);
         Assert.Equal(2, value.Count());
     }
 
@@ -261,7 +261,7 @@ public class MealControllerTests
         var result = await _controller.GetRecipes(1);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsAssignableFrom<IEnumerable<RecipeDto>>(ok.Value);
+        var value = Assert.IsAssignableFrom<IEnumerable<RecipeDetailDto>>(ok.Value);
         Assert.Empty(value);
     }
 
@@ -282,15 +282,15 @@ public class MealControllerTests
         var mealItems = new List<MealItemDto> { MakeMealItem(1, 1, 1), MakeMealItem(2, 1, 999) };
         _mealService.Setup(s => s.GetMealItemByMealIdAsync(UserId, 1))
             .ReturnsAsync(Result<IEnumerable<MealItemDto>>.Success(mealItems));
-        _recipeService.Setup(s => s.GetRecipeByIdAsync(UserId, 1))
-            .ReturnsAsync(Result<RecipeDto>.Success(MakeRecipe(1)));
-        _recipeService.Setup(s => s.GetRecipeByIdAsync(UserId, 999))
-            .ReturnsAsync(Result<RecipeDto>.Failure(RecipeErrors.NotFound));
+        _recipeService.Setup(s => s.GetRecipeDetailAsync(UserId, 1))
+            .ReturnsAsync(Result<RecipeDetailDto>.Success(MakeRecipe(1)));
+        _recipeService.Setup(s => s.GetRecipeDetailAsync(UserId, 999))
+            .ReturnsAsync(Result<RecipeDetailDto>.Failure(RecipeErrors.NotFound));
 
         var result = await _controller.GetRecipes(1);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsAssignableFrom<IEnumerable<RecipeDto>>(ok.Value);
+        var value = Assert.IsAssignableFrom<IEnumerable<RecipeDetailDto>>(ok.Value);
         Assert.Single(value);
     }
 

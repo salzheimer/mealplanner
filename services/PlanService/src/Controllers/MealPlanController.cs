@@ -3,11 +3,12 @@ using Microsoft.AspNetCore.Mvc;
 using Shared.Models;
 using PlanService.Interfaces;
 using PlanService.Models;
-using System.Reflection.Metadata;
+
 
 namespace PlanService.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 
 public class MealPlanController : BaseController
@@ -22,8 +23,8 @@ public class MealPlanController : BaseController
     //Meal Plan Endpoints
 
     [HttpPost]
-    [Authorize]
-    public async Task<IActionResult> CreateMealPlan(MealPlanCreateDto mealPlan)
+     
+    public async Task<IActionResult> CreateMealPlan([FromBody] MealPlanCreateDto mealPlan)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
         if (authenticatedUserId == null)
@@ -34,7 +35,7 @@ public class MealPlanController : BaseController
         return result;
     }
     [HttpGet("user-meal-plans")]
-    [Authorize]
+    
     public async Task<IActionResult> GetAllUserMealPlans()
     {
         var authenticatedUserId = GetAuthenticatedUserId();
@@ -48,7 +49,7 @@ public class MealPlanController : BaseController
     }
 
     [HttpGet("{id:int}")]
-    [Authorize]
+     
     public async Task<IActionResult> GetMealPlanById(int id)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
@@ -61,8 +62,8 @@ public class MealPlanController : BaseController
     }
 
 
-    [HttpGet]
-    [Authorize]
+    [HttpGet("serve-date")]
+     
     public async Task<IActionResult> GetMealPlansForDate([FromQuery] DateTime serveDate)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
@@ -73,8 +74,8 @@ public class MealPlanController : BaseController
         var result = HandleResult(await _mealPlanService.GetMealPlansByStartDateAsync(authenticatedUserId.Value, serveDate));
         return result;
     }
-    [HttpGet]
-    [Authorize]
+    [HttpGet("end-date")]
+     
     public async Task<IActionResult> GetMealPlansForEndDate([FromQuery] DateTime endDate)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
@@ -85,8 +86,8 @@ public class MealPlanController : BaseController
         var result = HandleResult(await _mealPlanService.GetMealPlansByEndDateAsync(authenticatedUserId.Value, endDate));
         return result;
     }
-    [HttpGet]
-    [Authorize]
+    [HttpGet("date-range")]
+    
     public async Task<IActionResult> GetMealPlansForDateRange([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
@@ -99,8 +100,8 @@ public class MealPlanController : BaseController
     }
 
     [HttpPut]
-    [Authorize]
-    public async Task<IActionResult> UpdateMealPlan(MealPlanUpdateDto mealPlan)
+    
+    public async Task<IActionResult> UpdateMealPlan([FromBody] MealPlanUpdateDto mealPlan)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
         if (authenticatedUserId == null)
@@ -111,7 +112,7 @@ public class MealPlanController : BaseController
         return result;
     }
     [HttpDelete("{id:int}")]
-    [Authorize]
+     
     public async Task<IActionResult> DeleteMealPlan(int id)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
@@ -124,20 +125,20 @@ public class MealPlanController : BaseController
     }
 
     // MealItemPlan Endpoints
-    [HttpPost("mealitem")]
-    [Authorize]
-    public async Task<IActionResult> AddMealItemToPlan(MealItemPlanCreateDto mealItemPlan)
+    [HttpPost("{mealplanId:int}/mealitems/")]
+    
+    public async Task<IActionResult> AddMealItemToPlan(int mealPlanId, [FromBody] MealItemPlanCreateDto mealItemPlan)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
         if (authenticatedUserId == null)
         {
             return HandleResult(Result<MealItemPlanDto?>.Failure(MealPlanErrors.Unauthorized));
         }
-        var result = HandleResult(await _mealPlanService.AddMealItemToPlanAsync(authenticatedUserId.Value, mealItemPlan));
+        var result = HandleResult(await _mealPlanService.AddMealItemToPlanAsync(authenticatedUserId.Value, mealPlanId, mealItemPlan));
         return result;
     }
-    [HttpGet("mealitems/{mealplanId:int}")]
-    [Authorize]
+    [HttpGet("{mealplanId:int}/mealitems")]
+     
     public async Task<IActionResult> GetMealItemsForPlan(int mealplanId)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
@@ -148,20 +149,20 @@ public class MealPlanController : BaseController
         var result = HandleResult(await _mealPlanService.GetMealItemsForMealPlanAsync(authenticatedUserId.Value, mealplanId));
         return result;
     }
-    [HttpPut("mealitem")]
-    [Authorize]
-    public async Task<IActionResult> UpdateMealItemInPlan(MealItemPlanUpdateDto mealItemPlan)
+    [HttpPut("{mealPlanId:int}/mealitems/{mealItemId}")]
+    
+    public async Task<IActionResult> UpdateMealItemInPlan(int mealPlanId, int mealItemId,[FromBody] MealItemPlanUpdateDto mealItemPlan)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
         if (authenticatedUserId == null)
         {
             return HandleResult(Result<MealItemPlanDto?>.Failure(MealPlanErrors.Unauthorized));
         }
-        var result = HandleResult(await _mealPlanService.UpdateMealItemInPlanAsync(authenticatedUserId.Value, mealItemPlan));
+        var result = HandleResult(await _mealPlanService.UpdateMealItemInPlanAsync(authenticatedUserId.Value,mealPlanId, mealItemId ,mealItemPlan));
         return result;
     }
     [HttpDelete("mealitem/{mealItemPlanId:int}")]
-    [Authorize]
+    
     public async Task<IActionResult> RemoveMealItemFromPlan(int mealItemPlanId)
     {
         var authenticatedUserId = GetAuthenticatedUserId();

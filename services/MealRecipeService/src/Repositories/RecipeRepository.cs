@@ -51,7 +51,7 @@ public class RecipeRepository : Interfaces.IRecipeRepository
     {
         return await _context.Recipes.Where(r => r.OwnerUserId == ownerId).ToListAsync();
     }
-    public async Task<IEnumerable<Recipe>> GetByIdsAsync(HashSet<int?> sharedRecipeIds)
+    public async Task<IEnumerable<Recipe>> GetByIdsAsync(HashSet<int> sharedRecipeIds)
     {
         return await _context.Recipes.Where(r => sharedRecipeIds.Contains(r.Id)).ToListAsync();
     }

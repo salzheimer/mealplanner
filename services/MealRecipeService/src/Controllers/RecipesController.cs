@@ -6,6 +6,7 @@ using Shared.Models;
 namespace MealRecipeService.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class RecipesController : BaseController
 {
@@ -17,7 +18,6 @@ public class RecipesController : BaseController
 
     //Recipe endpoints
     [HttpGet]
-    [Authorize]
     public async Task<IActionResult> GetAll()
     {
         var userId = GetAuthenticatedUserId();
@@ -30,21 +30,34 @@ public class RecipesController : BaseController
     }
 
     [HttpGet("{id:int}")]
-    [Authorize]
     public async Task<IActionResult> GetFullRecipe(int id)
     {
         var userId = GetAuthenticatedUserId();
         if (userId == null)
         {
-            return HandleResult(Result<RecipeDto>.Failure(RecipeErrors.Unauthorized));
+            return HandleResult(Result<RecipeDetailDto>.Failure(RecipeErrors.Unauthorized));
         }
 
-        var recipe = HandleResult(await _recipeService.GetRecipeByIdAsync(userId.Value, id));
+        var recipe = HandleResult(await _recipeService.GetRecipeDetailAsync(userId.Value, id));
 
         return recipe;
     }
+    [HttpGet("shared-with-me")]
+    public async Task<IActionResult> GetRecipesSharedWithMe()
+    {
+        var userId = GetAuthenticatedUserId();
+        if (userId == null)
+        {
+            return HandleResult(Result<IEnumerable<RecipeSummaryDto>>.Failure(RecipeErrors.Unauthorized));
+        }
+
+        var sharedRecipes = HandleResult(await _recipeService.GetRecipesSharedWithMeAsync(userId.Value));
+
+        return sharedRecipes;
+    }
+
     [HttpPost]
-    [Authorize]
+
     public async Task<IActionResult> Create([FromBody] RecipeCreateDto recipe)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
@@ -52,16 +65,12 @@ public class RecipesController : BaseController
         {
             return HandleResult(Result<RecipeSummaryDto>.Failure(RecipeErrors.Unauthorized));
         }
-        var createdRecipe = await _recipeService.CreateRecipeAsync(authenticatedUserId.Value, recipe);
-        if (!createdRecipe.IsSuccess)
-        {
-            return HandleResult(Result<RecipeSummaryDto>.Failure(createdRecipe.Error));
-        }
-        return HandleResult(createdRecipe);
+
+        return HandleResult(await _recipeService.CreateRecipeAsync(authenticatedUserId.Value, recipe));
 
     }
     [HttpPost("{recipeId:int}/clone")]
-    [Authorize]
+
     public async Task<IActionResult> Clone(int recipeId)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
@@ -69,31 +78,22 @@ public class RecipesController : BaseController
         {
             return HandleResult(Result<RecipeSummaryDto>.Failure(RecipeErrors.Unauthorized));
         }
-        var clonedRecipe = await _recipeService.CloneRecipeAsync(authenticatedUserId.Value, recipeId);
-        if (!clonedRecipe.IsSuccess)
-        {
-            return HandleResult(Result<RecipeSummaryDto>.Failure(clonedRecipe.Error));
-        }
-        return HandleResult(clonedRecipe);
+
+        return HandleResult(await _recipeService.CloneRecipeAsync(authenticatedUserId.Value, recipeId));
     }
-    [HttpPut("update")]
-    [Authorize]
-    public async Task<IActionResult> Update([FromBody] RecipeUpdateDto recipe)
+    [HttpPut("{recipeId:int}")]
+    public async Task<IActionResult> Update(int recipeId, [FromBody] RecipeUpdateDto recipe)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
         if (authenticatedUserId == null)
         {
             return HandleResult(Result<RecipeSummaryDto>.Failure(RecipeErrors.Unauthorized));
         }
-        var updatedRecipe = await _recipeService.UpdateRecipeAsync(authenticatedUserId.Value, recipe);
-        if (!updatedRecipe.IsSuccess)
-        {
-            return HandleResult(Result<RecipeSummaryDto>.Failure(updatedRecipe.Error));
-        }
-        return HandleResult(updatedRecipe);
+
+        return HandleResult(await _recipeService.UpdateRecipeAsync(authenticatedUserId.Value, recipeId, recipe));
     }
     [HttpDelete("{id:int}")]
-    [Authorize]
+
     public async Task<IActionResult> Delete(int id)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
@@ -108,7 +108,7 @@ public class RecipesController : BaseController
 
     //Ingredient endpoints
     [HttpGet("{recipeId:int}/ingredients")]
-    [Authorize]
+     
     public async Task<IActionResult> GetIngredients(int recipeId)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
@@ -120,35 +120,37 @@ public class RecipesController : BaseController
         return HandleResult(ingredients);
     }
 
-    [HttpPost("{recipeId:int}/add-ingredient")]
-    [Authorize]
-    public async Task<IActionResult> AddIngredient([FromBody] RecipeIngredientCreateDto ingredient)
+    [HttpPost("{recipeId:int}/ingredients")]
+
+    public async Task<IActionResult> AddIngredient(int recipeId, [FromBody] RecipeIngredientCreateDto ingredient)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
         if (authenticatedUserId == null)
         {
             return HandleResult(Result<RecipeIngredientSummaryDto>.Failure(RecipeErrors.Unauthorized));
         }
-        var addedIngredient = await _recipeService.AddIngredientToRecipeAsync(authenticatedUserId.Value, ingredient);
+        var addedIngredient = await _recipeService.AddIngredientToRecipeAsync(authenticatedUserId.Value, recipeId, ingredient);
         return HandleResult(addedIngredient);
     }
-    [HttpPut("{recipeId:int}/update-ingredient")]
-    [Authorize]
-    public async Task<IActionResult> UpdateIngredient([FromBody] RecipeIngredientSummaryDto ingredient)
+    [HttpPut("{recipeId:int}/ingredients/{ingredientId:int}")]
+
+    public async Task<IActionResult> UpdateIngredient(int recipeId, int ingredientId, [FromBody] RecipeIngredientUpdateDto ingredient)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
-        if (authenticatedUserId == null)        {
+        if (authenticatedUserId == null)
+        {
             return HandleResult(Result<RecipeIngredientSummaryDto>.Failure(RecipeErrors.Unauthorized));
         }
-        var updatedIngredient = await _recipeService.UpdateRecipeIngredientAsync(authenticatedUserId.Value, ingredient);
+        var updatedIngredient = await _recipeService.UpdateRecipeIngredientAsync(authenticatedUserId.Value, recipeId, ingredientId, ingredient);
         return HandleResult(updatedIngredient);
     }
     [HttpDelete("{recipeId:int}/ingredients/{ingredientId:int}")]
-    [Authorize]
+
     public async Task<IActionResult> DeleteIngredient(int recipeId, int ingredientId)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
-        if (authenticatedUserId == null)        {
+        if (authenticatedUserId == null)
+        {
             return HandleResult(Result<bool>.Failure(RecipeErrors.Unauthorized));
         }
         var deleteResult = await _recipeService.DeleteRecipeIngredientAsync(authenticatedUserId.Value, recipeId, ingredientId);
@@ -156,7 +158,7 @@ public class RecipesController : BaseController
     }
     //Instruction endpoints
     [HttpGet("{recipeId:int}/instructions")]
-    [Authorize]
+
     public async Task<IActionResult> GetInstructions(int recipeId)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
@@ -168,31 +170,32 @@ public class RecipesController : BaseController
         return HandleResult(instructions);
     }
 
-    [HttpPost("{recipeId:int}/add-instruction")]
-    [Authorize]
-    public async Task<IActionResult> AddInstruction([FromBody] RecipeInstructionCreateDto instruction)
+    [HttpPost("{recipeId:int}/instructions")]
+
+    public async Task<IActionResult> AddInstruction(int recipeId, [FromBody] RecipeInstructionCreateDto instruction)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
         if (authenticatedUserId == null)
         {
-            return HandleResult(Result<RecipeInstructionDto>.Failure(RecipeErrors.Unauthorized))    ;
-        }
-        var addedInstruction = await _recipeService.AddInstructionToRecipeAsync(authenticatedUserId.Value, instruction);
-        return HandleResult(addedInstruction);
-    }
-    [HttpPut("{recipeId:int}/update-instruction")]
-    [Authorize]
-    public async Task<IActionResult> UpdateInstruction([FromBody] RecipeInstructionDto instruction)
-    {
-        var authenticatedUserId = GetAuthenticatedUserId();
-        if (authenticatedUserId == null)        {
             return HandleResult(Result<RecipeInstructionDto>.Failure(RecipeErrors.Unauthorized));
         }
-        var updatedInstruction = await _recipeService.UpdateRecipeInstructionAsync(authenticatedUserId.Value, instruction);
+        var addedInstruction = await _recipeService.AddInstructionToRecipeAsync(authenticatedUserId.Value, recipeId, instruction);
+        return HandleResult(addedInstruction);
+    }
+    [HttpPut("{recipeId:int}/instructions/{instructionId:int}")]
+    [Authorize]
+    public async Task<IActionResult> UpdateInstruction(int recipeId, int instructionId, [FromBody] RecipeInstructionUpdateDto instruction)
+    {
+        var authenticatedUserId = GetAuthenticatedUserId();
+        if (authenticatedUserId == null)
+        {
+            return HandleResult(Result<RecipeInstructionDto>.Failure(RecipeErrors.Unauthorized));
+        }
+        var updatedInstruction = await _recipeService.UpdateRecipeInstructionAsync(authenticatedUserId.Value, recipeId, instructionId, instruction);
         return HandleResult(updatedInstruction);
     }
     [HttpDelete("{recipeId:int}/instructions/{instructionId:int}")]
-    [Authorize]
+
     public async Task<IActionResult> DeleteInstruction(int recipeId, int instructionId)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
@@ -206,14 +209,14 @@ public class RecipesController : BaseController
 
     //Share endpoints
     [HttpPost("{recipeId:int}/share")]
-    [Authorize]
+
     public async Task<IActionResult> ShareRecipe(int recipeId, [FromBody] ShareRequestDto request)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
         if (authenticatedUserId == null)
-            {
-                return HandleResult(Result<ResourcePermissionDto>.Failure(RecipeErrors.Unauthorized));
-            }
+        {
+            return HandleResult(Result<ResourcePermissionDto>.Failure(RecipeErrors.Unauthorized));
+        }
         return HandleResult(await _recipeService.ShareRecipeAsync(authenticatedUserId.Value, recipeId, request));
     }
 }

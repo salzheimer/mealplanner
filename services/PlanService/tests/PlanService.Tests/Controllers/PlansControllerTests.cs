@@ -66,7 +66,7 @@ public class PlansControllerTests
     public async Task GetAllUserPlans_ServiceFailure_Returns404()
     {
         _planningService.Setup(s => s.GetPlansForUserAsync(UserId))
-            .ReturnsAsync(Result<IEnumerable<PlanSummaryDto>>.Failure(PlanningErrors.PlanNotFound));
+            .ReturnsAsync(Result<IEnumerable<PlanSummaryDto>>.Failure(PlanErrors.PlanNotFound));
 
         var result = await _controller.GetAllUserPlans();
 
@@ -95,7 +95,7 @@ public class PlansControllerTests
     {
         var startDate = DateTime.UtcNow;
         _planningService.Setup(s => s.GetPlansByStartDateAsync(UserId, startDate))
-            .ReturnsAsync(Result<IEnumerable<PlanSummaryDto>>.Failure(PlanningErrors.PlanNotFound));
+            .ReturnsAsync(Result<IEnumerable<PlanSummaryDto>>.Failure(PlanErrors.PlanNotFound));
 
         var result = await _controller.GetPlansByStartDate(startDate);
 
@@ -124,7 +124,7 @@ public class PlansControllerTests
     {
         var endDate = DateTime.UtcNow.AddDays(7);
         _planningService.Setup(s => s.GetPlansByEndDateAsync(UserId, endDate))
-            .ReturnsAsync(Result<IEnumerable<PlanSummaryDto>>.Failure(PlanningErrors.PlanNotFound));
+            .ReturnsAsync(Result<IEnumerable<PlanSummaryDto>>.Failure(PlanErrors.PlanNotFound));
 
         var result = await _controller.GetPlansByEndDate(endDate);
 
@@ -150,7 +150,7 @@ public class PlansControllerTests
     public async Task GetById_NonExistentPlan_Returns404()
     {
         _planningService.Setup(s => s.GetPlanByIdAsync(UserId, 999))
-            .ReturnsAsync(Result<PlanSummaryDto>.Failure(PlanningErrors.PlanNotFound));
+            .ReturnsAsync(Result<PlanSummaryDto>.Failure(PlanErrors.PlanNotFound));
 
         var result = await _controller.GetById(999);
 
@@ -181,7 +181,7 @@ public class PlansControllerTests
         var start = DateTime.UtcNow;
         var end = DateTime.UtcNow.AddDays(7);
         _planningService.Setup(s => s.GetPlansByDateRangeAsync(UserId, start, end))
-            .ReturnsAsync(Result<IEnumerable<PlanSummaryDto>>.Failure(PlanningErrors.InvalidInput));
+            .ReturnsAsync(Result<IEnumerable<PlanSummaryDto>>.Failure(PlanErrors.InvalidInput));
 
         var result = await _controller.GetPlansByDateRange(start, end);
 
@@ -209,7 +209,7 @@ public class PlansControllerTests
     {
         var createDto = new PlanCreateDto(null, DateTime.UtcNow, null);
         _planningService.Setup(s => s.CreatePlanAsync(UserId, createDto))
-            .ReturnsAsync(Result<PlanSummaryDto>.Failure(PlanningErrors.UnableToCreate));
+            .ReturnsAsync(Result<PlanSummaryDto>.Failure(PlanErrors.UnableToCreate));
 
         var result = await _controller.CreatePlan(createDto);
 
@@ -222,10 +222,10 @@ public class PlansControllerTests
     public async Task UpdatePlan_ExistingPlan_Returns200WithPlan()
     {
         var updateDto = new PlanUpdateDto(1, "Updated Plan", DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
-        _planningService.Setup(s => s.UpdatePlanAsync(UserId, updateDto))
+        _planningService.Setup(s => s.UpdatePlanAsync(UserId, 1, updateDto))
             .ReturnsAsync(Result<PlanSummaryDto>.Success(MakePlan(1)));
 
-        var result = await _controller.UpdatePlan(updateDto);
+        var result = await _controller.UpdatePlan(1, updateDto);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         var value = Assert.IsType<PlanSummaryDto>(ok.Value);
@@ -236,10 +236,10 @@ public class PlansControllerTests
     public async Task UpdatePlan_NonExistentPlan_Returns400()
     {
         var updateDto = new PlanUpdateDto(999, "Updated Plan", DateTime.UtcNow, null);
-        _planningService.Setup(s => s.UpdatePlanAsync(UserId, updateDto))
-            .ReturnsAsync(Result<PlanSummaryDto>.Failure(PlanningErrors.UnableToUpdate));
+        _planningService.Setup(s => s.UpdatePlanAsync(UserId, 999, updateDto))
+            .ReturnsAsync(Result<PlanSummaryDto>.Failure(PlanErrors.UnableToUpdate));
 
-        var result = await _controller.UpdatePlan(updateDto);
+        var result = await _controller.UpdatePlan(999, updateDto);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
@@ -262,7 +262,7 @@ public class PlansControllerTests
     public async Task DeletePlan_NonExistentPlan_Returns400()
     {
         _planningService.Setup(s => s.DeletePlanAsync(UserId, 999))
-            .ReturnsAsync(Result<bool>.Failure(PlanningErrors.UnableToDelete));
+            .ReturnsAsync(Result<bool>.Failure(PlanErrors.UnableToDelete));
 
         var result = await _controller.DeletePlan(999);
 
@@ -290,7 +290,7 @@ public class PlansControllerTests
     {
         var createDto = new PlanShareCreateDto(0, 999, 2, null, UserId, Permission.View, null);
         _planningService.Setup(s => s.CreatePlanShareAsync(UserId, createDto))
-            .ReturnsAsync(Result<PlanShareDto>.Failure(PlanningErrors.UnableToShare));
+            .ReturnsAsync(Result<PlanShareDto>.Failure(PlanErrors.UnableToShare));
 
         var result = await _controller.CreatePlanShare(createDto);
 
@@ -317,7 +317,7 @@ public class PlansControllerTests
     public async Task GetPlanSharesByPlanId_NonExistentPlan_Returns404()
     {
         _planningService.Setup(s => s.GetPlanSharesByPlanIdAsync(UserId, 999))
-            .ReturnsAsync(Result<IEnumerable<PlanShareDto>>.Failure(PlanningErrors.PlanNotFound));
+            .ReturnsAsync(Result<IEnumerable<PlanShareDto>>.Failure(PlanErrors.PlanNotFound));
 
         var result = await _controller.GetPlanSharesByPlanId(999);
 
@@ -344,7 +344,7 @@ public class PlansControllerTests
     public async Task GetPlanSharesByUserId_ServiceFailure_Returns404()
     {
         _planningService.Setup(s => s.GetPlanSharesBySharedByUserIdAsync(UserId))
-            .ReturnsAsync(Result<IEnumerable<PlanShareDto>>.Failure(PlanningErrors.PlanNotFound));
+            .ReturnsAsync(Result<IEnumerable<PlanShareDto>>.Failure(PlanErrors.PlanNotFound));
 
         var result = await _controller.GetPlanSharesByUserId();
 
@@ -357,10 +357,10 @@ public class PlansControllerTests
     public async Task UpdatePlanShare_ExistingShare_Returns200WithUpdatedShare()
     {
         var updateDto = new PlanShareUpdateDto(1, 1, 2, null, UserId, Permission.Edit, null);
-        _planningService.Setup(s => s.UpdatePlanShareAsync(UserId, updateDto))
+        _planningService.Setup(s => s.UpdatePlanShareAsync(UserId, 1, updateDto))
             .ReturnsAsync(Result<PlanShareDto>.Success(MakePlanShare(1, 1)));
 
-        var result = await _controller.UpdatePlanShare(updateDto);
+        var result = await _controller.UpdatePlanShare(1, updateDto);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         var value = Assert.IsType<PlanShareDto>(ok.Value);
@@ -371,10 +371,10 @@ public class PlansControllerTests
     public async Task UpdatePlanShare_NonExistentShare_Returns404()
     {
         var updateDto = new PlanShareUpdateDto(999, 1, 2, null, UserId, Permission.Edit, null);
-        _planningService.Setup(s => s.UpdatePlanShareAsync(UserId, updateDto))
-            .ReturnsAsync(Result<PlanShareDto>.Failure(PlanningErrors.PlanShareNotFound));
+        _planningService.Setup(s => s.UpdatePlanShareAsync(UserId, 999, updateDto))
+            .ReturnsAsync(Result<PlanShareDto>.Failure(PlanErrors.PlanShareNotFound));
 
-        var result = await _controller.UpdatePlanShare(updateDto);
+        var result = await _controller.UpdatePlanShare(999, updateDto);
 
         Assert.IsType<NotFoundObjectResult>(result);
     }
@@ -387,7 +387,7 @@ public class PlansControllerTests
         _planningService.Setup(s => s.DeletePlanShareAsync(UserId, 1))
             .ReturnsAsync(Result<bool>.Success(true));
 
-        var result = await _controller.DeletePlanShare(1);
+        var result = await _controller.DeletePlanShare(1, 1);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         Assert.Equal(true, ok.Value);
@@ -397,9 +397,9 @@ public class PlansControllerTests
     public async Task DeletePlanShare_NonExistentShare_Returns400()
     {
         _planningService.Setup(s => s.DeletePlanShareAsync(UserId, 999))
-            .ReturnsAsync(Result<bool>.Failure(PlanningErrors.UnableToDelete));
+            .ReturnsAsync(Result<bool>.Failure(PlanErrors.UnableToDelete));
 
-        var result = await _controller.DeletePlanShare(999);
+        var result = await _controller.DeletePlanShare(1, 999);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }

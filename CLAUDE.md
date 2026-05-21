@@ -127,3 +127,37 @@ Enums mirror the postgres enum types exactly:
 - Do not use Swagger/Swashbuckle — this project uses `Microsoft.AspNetCore.OpenApi` + `Scalar.AspNetCore`.
 - Do not put shared types (DTOs, enums) inside individual service projects.
 - The `init.sql` schema uses snake_case column names and postgres-native enum types. C# enums in `Shared.Models` map to these — keep them in sync when schema changes.
+
+---
+
+## API & Controller Standards
+
+These rules apply to all controller work. Flag violations during code review or editing, not only when running `/assess-controllers`.
+
+### Return types
+Controllers must return `IActionResult` via `HandleResult<T>()`, never `Result<T>` directly.
+Returning `Result<T>` causes all failures to respond with HTTP 200.
+
+### Error namespaces — use the correct type per service
+- `PlansController` → `PlanningErrors`
+- `MealPlanController` → `MealPlanErrors`
+- `MealController` → `MealErrors`
+- `RecipesController` → `RecipeErrors`
+- `AuthController` / `PermissionController` → `UserErrors` / `PermissionErrors`
+
+Mixing namespaces (e.g., `MealPlanErrors.Unauthorized` in `PlansController`) produces wrong error codes on the wire.
+
+### Authorization
+`[Authorize]` on the controller class covers all methods. Do not repeat it on individual action methods unless an action intentionally requires *different* auth (e.g., `[AllowAnonymous]` on a public endpoint within an otherwise-protected controller).
+
+### Route conventions
+- No verbs in URL segments. Use HTTP method + noun: `POST /ingredients`, not `POST /add-ingredient`.
+- PUT and DELETE must include the resource ID in the route template, not only in the DTO body. A resource not addressable by URL cannot be cached, rate-limited, or targeted by API gateways.
+- Sub-resource routes: `/resource/{id}/sub-resource/{subId}`.
+- Do not repeat the controller name inside `[Http*]` route templates when using `[Route("api/[controller]")]` — this doubles the segment (e.g., `[HttpPost("recipes/{id}/ingredients")]` on `RecipesController` resolves to `/api/recipes/recipes/{id}/ingredients`).
+
+### Sharing surface
+Every shareable resource requires three endpoints: grant (POST), revoke (DELETE), and shared-with-me (GET). A share endpoint without a revoke endpoint makes sharing permanent through the API.
+
+### Auth-failure type consistency
+The `Result<T>` type in an early-return auth failure must match the type the action returns on the success path. A mismatch (e.g., `Result<ResourcePermissionDto>` in a method that succeeds with `Result<IEnumerable<MealDto>>`) produces a malformed failure response body.

@@ -70,4 +70,9 @@ public class PlanRepository : IPlanRepository
     {
         return await _context.Plans.Where(p => p.StartDate >= startDate && p.EndDate <= endDate).ToListAsync();
     }
+
+      public async Task<IEnumerable<Plan>> GetByIdsAsync(HashSet<int> sharedPlanIds)
+    {
+        return await _context.Plans.Where(p => sharedPlanIds.Contains(p.Id)).ToListAsync();
+    }
 }

@@ -1,7 +1,7 @@
 using Shared.Models;
 
 namespace PlanService.Models;
-public static class PlanningErrors
+public static class PlanErrors
 {
     public static readonly Error PlanNotFound = new ("Plan.NotFound", "The specified plan was not found.", ErrorType.NotFound);
     public static readonly Error PlanShareNotFound = new ("PlanShare.NotFound", "The specified plan share was not found.", ErrorType.NotFound);

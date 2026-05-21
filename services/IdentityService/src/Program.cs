@@ -31,6 +31,39 @@ var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>() ?? 
 builder.Services.AddSingleton(jwtSettings);
 builder.Services.AddSingleton(new TokenService(jwtSettings.Issuer, jwtSettings.Audience, jwtSettings.Secret));
 
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = "Bearer";
+    options.DefaultChallengeScheme = "Bearer";
+})
+.AddJwtBearer("Bearer", options =>
+{
+    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSettings.Issuer,
+        ValidAudience = jwtSettings.Audience,
+        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwtSettings.Secret))
+    };
+});
+
+var serviceApiKey = builder.Configuration["ServiceApiKey"] ?? "";
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("InternalServiceOnly", policy =>
+        policy
+            .RequireAuthenticatedUser()
+            .RequireAssertion(ctx =>
+            {
+                if (string.IsNullOrEmpty(serviceApiKey)) return false;
+                if (ctx.Resource is not HttpContext httpContext) return false;
+                return httpContext.Request.Headers["X-Service-Key"].ToString() == serviceApiKey;
+            }));
+});
+
 // In-memory user store
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -48,6 +81,9 @@ var dataSource = dataSourceBuilder.Build();
 builder.Services.AddDbContext<UserContext>(options => options.UseNpgsql(dataSource));
 
 var app = builder.Build();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapGet("/health", () => Results.Ok(new { status = "Healthy" }))
     .WithName("Health");

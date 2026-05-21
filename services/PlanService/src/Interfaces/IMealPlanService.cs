@@ -15,10 +15,10 @@ public interface IMealPlanService
     Task<Result<bool>> DeleteMealPlanAsync(int userId, int id);
 
     // MealItemPlan management
-    Task<Result<MealItemPlanDto?>> AddMealItemToPlanAsync(int userId, MealItemPlanCreateDto mealItemPlan);
-    Task<Result<IEnumerable<MealItemPlanDto>>> GetMealItemsForMealPlanAsync(int userId, int planId);
+    Task<Result<MealItemPlanDto?>> AddMealItemToPlanAsync(int userId, int mealPlanId, MealItemPlanCreateDto mealItemPlan);
+    Task<Result<IEnumerable<MealItemPlanDto>>> GetMealItemsForMealPlanAsync(int userId, int mealPlanId);
 
-    Task<Result<MealItemPlanDto>> UpdateMealItemInPlanAsync(int userId, MealItemPlanUpdateDto mealItemPlan);
+    Task<Result<MealItemPlanDto>> UpdateMealItemInPlanAsync(int userId, int mealPlanId, int mealItemId, MealItemPlanUpdateDto mealItemPlan);
     Task<Result<bool>> RemoveMealItemFromPlanAsync(int userId, int mealItemPlanId);
 
 }

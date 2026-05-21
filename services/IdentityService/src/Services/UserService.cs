@@ -1,6 +1,7 @@
 using System.IO.Pipelines;
 using IdentityService.Interfaces;
 using IdentityService.Models;
+using Microsoft.AspNetCore.Mvc;
 using Shared.Models;
 
 namespace IdentityService.Services;
@@ -25,11 +26,11 @@ public class UserService : IUserService
             displayName: userDto.DisplayName,
             email: userDto.Email
         );
-       
+
         await _userRepository.Create(user);
-       
+
         var newUser = await _userRepository.GetUser(user.Email);
-       
+
         var credential = new UserCredentials(
 
             userId: newUser.Id,
@@ -38,27 +39,44 @@ public class UserService : IUserService
             createdAt: now,
             updatedAt: now
         );
-       
+
         await _credentialsRepository.CreateCredentials(credential);
         var response = new UserResponseDto(user.Id, user.Email, String.IsNullOrEmpty(user.DisplayName) ? string.Empty : user.DisplayName);
         return Result<UserResponseDto>.Success(response);
     }
 
-    public async Task<Result<UserResponseDto?>> FindByEmail(string email)
+    public async Task<Result<UserResponseDto>> FindByEmail(string email)
     {
 
         var user = await _userRepository.GetUser(email);
-        if (user is null) return null;
-        return Result<UserResponseDto?>.Success(new UserResponseDto(user.Id, user.Email, string.IsNullOrEmpty(user.DisplayName) ? string.Empty : user.DisplayName));
+        if (user is null)
+        {
+            return Result<UserResponseDto>.Failure(UserErrors.NotFound);
+        }
+        return Result<UserResponseDto>.Success(new UserResponseDto(user.Id, user.Email, string.IsNullOrEmpty(user.DisplayName) ? string.Empty : user.DisplayName));
     }
 
-    public async Task<Result<UserResponseDto?>> FindById(int id)
+    public async Task<Result<UserResponseDto>> FindById(int id)
     {
         var user = await _userRepository.GetUser(id);
-        if (user is null) return Result<UserResponseDto?>.Failure(UserErrors.NotFound);
-        return Result<UserResponseDto?>.Success(new UserResponseDto(user.Id, user.Email, string.IsNullOrEmpty(user.DisplayName) ? string.Empty : user.DisplayName));
+        if (user is null) return Result<UserResponseDto>.Failure(UserErrors.NotFound);
+        return Result<UserResponseDto>.Success(new UserResponseDto(user.Id, user.Email, string.IsNullOrEmpty(user.DisplayName) ? string.Empty : user.DisplayName));
     }
+    public async Task<Result<string>> ValidatePassword([FromBody] string password)
+    {
+        int length = password.Length;
+        if (length < 8)
+        {
+            return Result<string>.Failure(new Error("Password.LengthToShort", "Password id to short (min of 8 characters)", ErrorType.InvalidInput));
+        }
+        else if (length > 64)
+        {
+            return Result<string>.Failure(new Error("Password.LengthToLong", "Password id to short (max of 64 characters)", ErrorType.InvalidInput));
+        }
 
+        //TODO: additional checks
+        return Result<string>.Success(password);
+    }
     public async Task<bool> ValidateCredentials(string email, string password)
     {
         var userResult = await FindByEmail(email);

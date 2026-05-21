@@ -29,6 +29,7 @@ services:
       - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=mealplannerdb;Username=mealplanner_user;Password=mealPlanner26!
       - ASPNETCORE_URLS=http://+:80
       - ASPNETCORE_ENVIRONMENT=Development
+      - ServiceApiKey=internal-service-key-replace-in-production
     ports:
       - "5002:80"
     healthcheck:
@@ -48,6 +49,7 @@ services:
       - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=mealplannerdb;Username=mealplanner_user;Password=mealPlanner26!
       - ASPNETCORE_URLS=http://+:80
       - ASPNETCORE_ENVIRONMENT=Development
+      - ServiceApiKey=internal-service-key-replace-in-production
     ports:
       - "5003:80"
     healthcheck:
@@ -67,6 +69,7 @@ services:
       - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=mealplannerdb;Username=mealplanner_user;Password=mealPlanner26!
       - ASPNETCORE_URLS=http://+:80
       - ASPNETCORE_ENVIRONMENT=Development
+      - ServiceApiKey=internal-service-key-replace-in-production
     ports:
       - "5004:80"
     healthcheck:

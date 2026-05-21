@@ -1,5 +1,5 @@
 using MealRecipeService.Interfaces;
-using MealRecipeService.Models;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Models;
@@ -7,6 +7,7 @@ using Shared.Models;
 namespace MealRecipeService.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class MealController : BaseController
 {
@@ -22,8 +23,7 @@ public class MealController : BaseController
     // Meal endpoints
 
     [HttpGet("{id:int}")]
-    [Authorize]
-    public async Task<IActionResult> GetMeal(int id)
+       public async Task<IActionResult> GetMeal(int id)
     {
         var userId = GetAuthenticatedUserId();
         if (userId == null)
@@ -32,8 +32,7 @@ public class MealController : BaseController
     }
 
     [HttpPost]
-    [Authorize]
-    public async Task<IActionResult> CreateMeal(MealCreateDto meal)
+    public async Task<IActionResult> CreateMeal([FromBody] MealCreateDto meal)
     {
         var userId = GetAuthenticatedUserId();
         if (userId == null)
@@ -42,8 +41,7 @@ public class MealController : BaseController
     }
 
     [HttpPut]
-    [Authorize]
-    public async Task<IActionResult> UpdateMeal(MealUpdateDto meal)
+    public async Task<IActionResult> UpdateMeal([FromBody] MealUpdateDto meal)
     {
         var userId = GetAuthenticatedUserId();
         if (userId == null)
@@ -52,7 +50,6 @@ public class MealController : BaseController
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize]
     public async Task<IActionResult> DeleteMeal(int id)
     {
         var userId = GetAuthenticatedUserId();
@@ -62,7 +59,6 @@ public class MealController : BaseController
     }
 
     [HttpPost("{mealId:int}/clone")]
-    [Authorize]
     public async Task<IActionResult> CloneMeal(int mealId)
     {
         var userId = GetAuthenticatedUserId();
@@ -72,7 +68,6 @@ public class MealController : BaseController
     }
 
     [HttpPost("{mealId:int}/share")]
-    [Authorize]
     public async Task<IActionResult> ShareMeal(int mealId, [FromBody] ShareRequestDto request)
     {
         var userId = GetAuthenticatedUserId();
@@ -80,33 +75,40 @@ public class MealController : BaseController
             return HandleResult(Result<ResourcePermissionDto>.Failure(MealErrors.Unauthorized));
         return HandleResult(await _mealService.ShareMealAsync(userId.Value, mealId, request));
     }
+    [HttpGet("shared-with-me")]
+    public async Task<IActionResult> MealsSharedWithMe()
+    {
+        var userId = GetAuthenticatedUserId();
+         if (userId == null)
+            return HandleResult(Result<ResourcePermissionDto>.Failure(MealErrors.Unauthorized));
 
+            return HandleResult(await _mealService.GetMealsSharedWithMeAsync(userId.Value));
+    }
     // MealItem endpoints
 
     [HttpGet("{mealId:int}/recipes")]
-    [Authorize]
     public async Task<IActionResult> GetRecipes(int mealId)
     {
         var userId = GetAuthenticatedUserId();
         if (userId == null)
-            return HandleResult(Result<IEnumerable<RecipeDto>>.Failure(MealErrors.Unauthorized));
+            return HandleResult(Result<IEnumerable<RecipeSummaryDto>>.Failure(MealErrors.Unauthorized));
 
         var mealItemResult = await _mealService.GetMealItemByMealIdAsync(userId.Value, mealId);
         if (!mealItemResult.IsSuccess || mealItemResult.Value == null)
-            return HandleResult(Result<IEnumerable<RecipeDto>>.Failure(MealItemErrors.NotFoundMeal));
+            return HandleResult(Result<IEnumerable<RecipeDetailDto>>.Failure(MealItemErrors.NotFoundMeal));
 
-        var recipeDtos = new List<RecipeDto>();
+        var recipeDtos = new List<RecipeDetailDto>();
         foreach (var mealItem in mealItemResult.Value)
-        {
-            var recipeResult = await _recipeService.GetRecipeByIdAsync(userId.Value, mealItem.RecipeId!.Value);
+        {   if(mealItem.ItemType != Shared.Models.ItemType.Recipe || mealItem.RecipeId == null)
+                continue;
+            var recipeResult = await _recipeService.GetRecipeDetailAsync(userId.Value, mealItem.RecipeId.Value);
             if (recipeResult.IsSuccess && recipeResult.Value != null)
                 recipeDtos.Add(recipeResult.Value);
         }
-        return HandleResult(Result<IEnumerable<RecipeDto>>.Success(recipeDtos));
+        return HandleResult(Result<IEnumerable<RecipeDetailDto>>.Success(recipeDtos));
     }
 
     [HttpPost("{mealId:int}/items")]
-    [Authorize]
     public async Task<IActionResult> AddMealItem(int mealId, [FromBody] MealItemCreateDto mealItem)
     {
         var userId = GetAuthenticatedUserId();
@@ -116,7 +118,6 @@ public class MealController : BaseController
     }
 
     [HttpPut("items")]
-    [Authorize]
     public async Task<IActionResult> UpdateMealItem([FromBody] MealItemUpdateDto mealItem)
     {
         var userId = GetAuthenticatedUserId();
@@ -126,7 +127,6 @@ public class MealController : BaseController
     }
 
     [HttpDelete("items/{mealItemId:int}")]
-    [Authorize]
     public async Task<IActionResult> DeleteMealItem(int mealItemId)
     {
         var userId = GetAuthenticatedUserId();

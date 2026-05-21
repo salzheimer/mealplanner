@@ -1,6 +1,6 @@
 namespace Shared.Models;
 //Recipe  DTOs
-public record RecipeDto(
+public record RecipeDetailDto(
     int Id,
     string Name,
     string? Description,
@@ -18,6 +18,7 @@ public record RecipeSummaryDto(
     int Id,
     string Name,
     string? Description,
+    string? Notes,
     int? Ranking,
     string? OriginalSource,
     TimeSpan? CookTime,
@@ -51,7 +52,7 @@ public record RecipeUpdateDto(
     TimeSpan? CookTime,
     TimeSpan? PrepTime,
     int? Servings,
-    int? OwnerUserId    
+    int? OwnerUserId
 );
 
 //Recipe ingredient DTOs
@@ -76,13 +77,18 @@ public record RecipeIngredientSummaryDto(
     string? Note
 );
 public record RecipeIngredientCreateDto(
-    int RecipeId,
     string? Name,
     decimal? Amount,
     string? MeasurementType,
     string? Note
 );
-
+public record RecipeIngredientUpdateDto(
+    int Id,
+    string? Name,
+    decimal? Amount,
+    string? MeasurementType,
+    string? Note
+);
 
 //Recipe instructions DTOs
 public record RecipeInstructionDto(
@@ -93,7 +99,13 @@ public record RecipeInstructionDto(
     string? Note
 );
 public record RecipeInstructionCreateDto(
-    int RecipeId,
+   
+    int? StepNumber,
+    string? Description,
+    string? Note
+);
+public record RecipeInstructionUpdateDto(
+    int Id,
     int? StepNumber,
     string? Description,
     string? Note
@@ -134,17 +146,21 @@ public record MealDto(
     string? Notes,
     MealType MealType,
     bool IsMultiDayMeal,
+    int CreatedBy,
     DateTime? CreateAt,
+    int UpdatedBy,
     DateTime? UpdatedAt
 
 );
+
+
 
 public record MealCreateDto(
     MealType MealType,
     string Name,
     string? Description,
     string? Notes,
-    bool? IsMultiDayMeal
+    bool IsMultiDayMeal
 
 
 );
@@ -154,7 +170,7 @@ public record MealUpdateDto(
     string Name,
     string? Description,
     string? Notes,
-    bool? IsMultiDayMeal,
+    bool IsMultiDayMeal,
 
     DateTime? UpdatedAt
 

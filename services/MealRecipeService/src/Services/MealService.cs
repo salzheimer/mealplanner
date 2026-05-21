@@ -40,7 +40,64 @@ public class MealService : IMealService
 
         return Result<MealDto>.Success(ToDto(newMeal));
     }
+    public async Task<Result<IEnumerable<MealDto>>> GetAllMealsAsync(int userId)
+    {
+        var meals = await _mealRepository.GetByOwnerIdAsync(userId);
 
+        //get meals shared with user
+        var sharedPermissions = await _identityClient.GetUserPermissionsAsync(userId);
+
+        var sharedMealIds = sharedPermissions.IsSuccess
+        ? sharedPermissions.Value!.Where(p => p.ResourceType == ResourceType.Meal).Select(p => p.ResourceId).ToHashSet()
+        : new HashSet<int>();
+
+        var shareMeals = sharedMealIds.Any() ? await _mealRepository.GetByIdsAsync(sharedMealIds) : Enumerable.Empty<Meal>();
+
+        meals.Concat(shareMeals);
+
+        var mealDtos = meals.Select(m => new MealDto(
+            Id: m.Id,
+            Name: m.Name,
+            Description: m.Description,
+            Notes: m.Notes,
+            MealType: Mappings.EnumMappings.ToDtoMealType(m.MealType),
+            IsMultiDayMeal: m.IsMultiDayMeal,
+            CreatedBy: m.CreatedBy,
+            CreateAt: m.CreatedAt,
+            UpdatedBy: m.UpdatedBy,
+            UpdatedAt: m.UpdatedAt
+        ));
+
+        return Result<IEnumerable<MealDto>>.Success(mealDtos);
+    }
+    public async Task<Result<IEnumerable<MealDto>>> GetMealsSharedWithMeAsync(int userId)
+    {
+        
+        //get meals shared with user
+        var sharedPermissions = await _identityClient.GetUserPermissionsAsync(userId);
+
+        var sharedMealIds = sharedPermissions.IsSuccess
+        ? sharedPermissions.Value!.Where(p => p.ResourceType == ResourceType.Meal).Select(p => p.ResourceId).ToHashSet()
+        : new HashSet<int>();
+
+        var sharedMeals = sharedMealIds.Any() ? await _mealRepository.GetByIdsAsync(sharedMealIds) : Enumerable.Empty<Meal>();
+
+         
+        var mealDtos = sharedMeals.Select(m => new MealDto(
+            Id: m.Id,
+            Name: m.Name,
+            Description: m.Description,
+            Notes: m.Notes,
+            MealType: Mappings.EnumMappings.ToDtoMealType(m.MealType),
+            IsMultiDayMeal: m.IsMultiDayMeal,
+            CreatedBy: m.CreatedBy,
+            CreateAt: m.CreatedAt,
+            UpdatedBy: m.UpdatedBy,
+            UpdatedAt: m.UpdatedAt
+        ));
+
+        return Result<IEnumerable<MealDto>>.Success(mealDtos);
+    }
     public async Task<Result<MealDto>> GetMealByIdAsync(int userId, int id)
     {
         var meal = await _mealRepository.GetByIdAsync(id);
@@ -65,6 +122,7 @@ public class MealService : IMealService
             Notes = mealDto.Notes,
             MealType = EnumMappings.ToEntityMealType(mealDto.MealType),
             IsMultiDayMeal = mealDto.IsMultiDayMeal,
+            UpdatedBy = userId,
             UpdatedAt = DateTime.UtcNow
         };
         var updatedMeal = await _mealRepository.UpdateAsync(mealEntity);
@@ -77,9 +135,12 @@ public class MealService : IMealService
             Description: mealEntity.Description,
             Notes: mealEntity.Notes,
             MealType: mealEntity.MealType.ToDtoMealType(),
-            IsMultiDayMeal: mealEntity.IsMultiDayMeal ?? false,
+            IsMultiDayMeal: mealEntity.IsMultiDayMeal,
+            CreatedBy: mealEntity.CreatedBy,
             CreateAt: null,
+            UpdatedBy: mealEntity.UpdatedBy,
             UpdatedAt: mealEntity.UpdatedAt
+
         ));
     }
 
@@ -265,8 +326,10 @@ public class MealService : IMealService
         Description: meal.Description,
         Notes: meal.Notes,
         MealType: meal.MealType.ToDtoMealType(),
-        IsMultiDayMeal: meal.IsMultiDayMeal ?? false,
+        IsMultiDayMeal: meal.IsMultiDayMeal,
+        CreatedBy: meal.CreatedBy,
         CreateAt: meal.CreatedAt,
+        UpdatedBy: meal.UpdatedBy,
         UpdatedAt: meal.UpdatedAt
     );
 

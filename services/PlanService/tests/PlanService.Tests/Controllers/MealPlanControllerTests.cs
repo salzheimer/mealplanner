@@ -275,10 +275,10 @@ public class MealPlanControllerTests
     public async Task AddMealItemToPlan_ValidItem_Returns200WithMealItemPlan()
     {
         var createDto = new MealItemPlanCreateDto(1, 5, null, null, ItemStatus.Pending, null);
-        _mealPlanService.Setup(s => s.AddMealItemToPlanAsync(UserId, createDto))
+        _mealPlanService.Setup(s => s.AddMealItemToPlanAsync(UserId, 1, createDto))
             .ReturnsAsync(Result<MealItemPlanDto?>.Success(MakeMealItemPlan(1, 1)));
 
-        var result = await _controller.AddMealItemToPlan(createDto);
+        var result = await _controller.AddMealItemToPlan(1, createDto);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         var value = Assert.IsType<MealItemPlanDto>(ok.Value);
@@ -289,10 +289,10 @@ public class MealPlanControllerTests
     public async Task AddMealItemToPlan_ServiceFailure_Returns400()
     {
         var createDto = new MealItemPlanCreateDto(999, 5, null, null, null, null);
-        _mealPlanService.Setup(s => s.AddMealItemToPlanAsync(UserId, createDto))
+        _mealPlanService.Setup(s => s.AddMealItemToPlanAsync(UserId, 999, createDto))
             .ReturnsAsync(Result<MealItemPlanDto?>.Failure(MealPlanErrors.UnableToCreate));
 
-        var result = await _controller.AddMealItemToPlan(createDto);
+        var result = await _controller.AddMealItemToPlan(999, createDto);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
@@ -330,10 +330,10 @@ public class MealPlanControllerTests
     public async Task UpdateMealItemInPlan_ExistingItem_Returns200WithUpdatedItem()
     {
         var updateDto = new MealItemPlanUpdateDto(1, 1, 5, null, null, ItemStatus.Confirmed, null);
-        _mealPlanService.Setup(s => s.UpdateMealItemInPlanAsync(UserId, updateDto))
+        _mealPlanService.Setup(s => s.UpdateMealItemInPlanAsync(UserId, 1, 5, updateDto))
             .ReturnsAsync(Result<MealItemPlanDto>.Success(MakeMealItemPlan(1, 1)));
 
-        var result = await _controller.UpdateMealItemInPlan(updateDto);
+        var result = await _controller.UpdateMealItemInPlan(1, 5, updateDto);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         var value = Assert.IsType<MealItemPlanDto>(ok.Value);
@@ -344,10 +344,10 @@ public class MealPlanControllerTests
     public async Task UpdateMealItemInPlan_NonExistentItem_Returns400()
     {
         var updateDto = new MealItemPlanUpdateDto(999, 1, 5, null, null, null, null);
-        _mealPlanService.Setup(s => s.UpdateMealItemInPlanAsync(UserId, updateDto))
+        _mealPlanService.Setup(s => s.UpdateMealItemInPlanAsync(UserId, 1, 5, updateDto))
             .ReturnsAsync(Result<MealItemPlanDto>.Failure(MealPlanErrors.UnableToUpdate));
 
-        var result = await _controller.UpdateMealItemInPlan(updateDto);
+        var result = await _controller.UpdateMealItemInPlan(1, 5, updateDto);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }

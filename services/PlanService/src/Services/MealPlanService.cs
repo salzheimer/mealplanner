@@ -120,9 +120,9 @@ public class MealPlanService : IMealPlanService
 
     #region MealItemPlan management
 
-    public async Task<Result<MealItemPlanDto?>> AddMealItemToPlanAsync(int userId, MealItemPlanCreateDto mealItemPlan)
+    public async Task<Result<MealItemPlanDto?>> AddMealItemToPlanAsync(int userId, int mealPlanId, MealItemPlanCreateDto mealItemPlan)
     {
-        var mealPlan = await _mealPlanRepository.GetMealPlanByIdAsync(mealItemPlan.MealPlanId);
+        var mealPlan = await _mealPlanRepository.GetMealPlanByIdAsync(mealPlanId);
         if (mealPlan == null)
             return Result<MealItemPlanDto?>.Failure(MealPlanErrors.MealPlanNotFound);
         if (!await UserHasEditAccessToPlan(userId, mealPlan.PlanId))
@@ -130,7 +130,7 @@ public class MealPlanService : IMealPlanService
 
         var mealItemPlanEntity = new MealItemPlan
         {
-            MealPlanId = mealItemPlan.MealPlanId,
+            MealPlanId = mealPlanId,
             MealItemId = mealItemPlan.MealItemId,
             AssignedToGuestName = mealItemPlan.AssignedToGuestName,
             AssignedToUserId = mealItemPlan.AssignedToUser,
@@ -157,9 +157,9 @@ public class MealPlanService : IMealPlanService
         return Result<IEnumerable<MealItemPlanDto>>.Success(items.Select(ToItemDto).ToList());
     }
 
-    public async Task<Result<MealItemPlanDto>> UpdateMealItemInPlanAsync(int userId, MealItemPlanUpdateDto mealItemPlan)
+    public async Task<Result<MealItemPlanDto>> UpdateMealItemInPlanAsync(int userId, int mealPlanId, int mealItemId, MealItemPlanUpdateDto mealItemPlan)
     {
-        var mealPlan = await _mealPlanRepository.GetMealPlanByIdAsync(mealItemPlan.MealPlanId);
+        var mealPlan = await _mealPlanRepository.GetMealPlanByIdAsync(mealPlanId);
         if (mealPlan == null)
             return Result<MealItemPlanDto>.Failure(MealPlanErrors.MealPlanNotFound);
         if (!await UserHasEditAccessToPlan(userId, mealPlan.PlanId))
