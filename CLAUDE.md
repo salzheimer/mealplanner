@@ -8,29 +8,29 @@
 
 ### Run the full stack
 ```bash
-# From repo root — create the external volume once if it doesn't exist
+# From workspace root — create the external volume once if it doesn't exist
 docker volume create mealplanningdb_data
 
 # Start all services
-docker compose -f mealplanner/infrastructure/docker/docker-compose.yml up --build
+docker compose -f infrastructure/docker/docker-compose.yml up --build
 ```
 
 ### Build a single service locally
 ```bash
-dotnet build mealplanner/services/PlanService/src/PlanService.csproj
-dotnet build mealplanner/services/MealRecipeService/src/MealRecipeService.csproj
-dotnet build mealplanner/services/IdentityService/src/IdentityService.csproj
-dotnet build mealplanner/services/ApiGateway/src/ApiGateway.csproj
+dotnet build services/PlanService/src/PlanService.csproj
+dotnet build services/MealRecipeService/src/MealRecipeService.csproj
+dotnet build services/IdentityService/src/IdentityService.csproj
+dotnet build services/ApiGateway/src/ApiGateway.csproj
 ```
 
 ### Run a single service locally
 ```bash
-cd mealplanner/services/PlanService/src && dotnet run
+cd services/PlanService/src && dotnet run
 ```
 
 ### View logs
 ```bash
-docker compose -f mealplanner/infrastructure/docker/docker-compose.yml logs -f <service-name>
+docker compose -f infrastructure/docker/docker-compose.yml logs -f <service-name>
 # service names: postgres, auth-service, meal-service, plan-service, api-gateway
 ```
 
@@ -54,8 +54,9 @@ Health check: `http://localhost:<port>/health`
 ## Project Structure
 
 ```
-mealplanner/
+.
 ├── CLAUDE.md                        # This file
+├── meal_planning_monorepo.sln       # Visual Studio solution file
 ├── docs/
 │   ├── meal_planning_datamodel.drawio
 │   ├── architecture.drawio
