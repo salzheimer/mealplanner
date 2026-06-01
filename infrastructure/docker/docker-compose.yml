@@ -78,10 +78,12 @@ services:
       timeout: 5s
       retries: 5
 
-  api-gateway:
+  frontend:
     build:
-      context: ../..
-      dockerfile: services/ApiGateway/src/Dockerfile
+      context: ../../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
     depends_on:
       auth-service:
         condition: service_healthy
@@ -89,16 +91,7 @@ services:
         condition: service_healthy
       plan-service:
         condition: service_healthy
-    environment:
-      - ASPNETCORE_URLS=http://+:80
-      - ASPNETCORE_ENVIRONMENT=Development
-    ports:
-      - "5001:80"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    restart: unless-stopped
 
 volumes:
   mealplanningdb_data:
