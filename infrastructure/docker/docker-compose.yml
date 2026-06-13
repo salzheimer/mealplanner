@@ -1,98 +1,154 @@
 
 name: mealplanner
 services:
-  postgres:
+  # postgres:
+  #   image: postgres:17
+  #   environment:
+  #     POSTGRES_USER: mealplanner_user
+  #     POSTGRES_PASSWORD: mealPlanner26!
+  #     POSTGRES_DB: mealplannerdb
+  #   volumes:
+  #     - mealplanningdb_data:/var/lib/postgresql/data
+  #     - ../postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+  #   ports:
+  #     - "5432:5432"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  identity_db:
     image: postgres:17
+    container_name: identity-database-container
     environment:
       POSTGRES_USER: mealplanner_user
       POSTGRES_PASSWORD: mealPlanner26!
-      POSTGRES_DB: mealplannerdb
+      POSTGRES_DB: identitydb
     volumes:
-      - mealplanningdb_data:/var/lib/postgresql/data
-      - ../postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - identitydb_data:/var/lib/postgresql/data
+      - ../postgres/identity_db/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
-
-  auth-service:
-    build:
-      context: ../..
-      dockerfile: services/IdentityService/src/Dockerfile
-    depends_on:
-      postgres:
-        condition: service_healthy
+  meal-recipe-db:
+    image: postgres:17
+    container_name: meal-recipe-database-container
     environment:
-      - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=mealplannerdb;Username=mealplanner_user;Password=mealPlanner26!
-      - ASPNETCORE_URLS=http://+:80
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ServiceApiKey=internal-service-key-replace-in-production
+      POSTGRES_USER: mealplanner_user
+      POSTGRES_PASSWORD: mealPlanner26!
+      POSTGRES_DB: mealrecipe_db
+    volumes:
+      - mealrecipedb_data:/var/lib/postgresql/data
+      - ../postgres/meal_recipe_db/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
-      - "5002:80"
+      - "5434:5432"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
-
-  meal-service:
-    build:
-      context: ../..
-      dockerfile: services/MealRecipeService/src/Dockerfile
-    depends_on:
-      postgres:
-        condition: service_healthy
+  plan-db:
+    image: postgres:17
+    container_name: plan-database-container
     environment:
-      - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=mealplannerdb;Username=mealplanner_user;Password=mealPlanner26!
-      - ASPNETCORE_URLS=http://+:80
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ServiceApiKey=internal-service-key-replace-in-production
+      POSTGRES_USER: mealplanner_user
+      POSTGRES_PASSWORD: mealPlanner26!
+      POSTGRES_DB: plan_db
+    volumes:  
+      - plandb_data:/var/lib/postgresql/data
+      - ../postgres/plan_db/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
-      - "5003:80"
+      - "5435:5432"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 5      
+  # identity-service:
+  #   build:
+  #     context: ../..
+  #     dockerfile: services/IdentityService/src/Dockerfile
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   environment:
+  #     - ConnectionStrings__Postgres=Host=identity_db;Port=5433;Database=identitydb;Username=mealplanner_user;Password=mealPlanner26!
+  #     - ASPNETCORE_URLS=http://+:80
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ServiceApiKey=internal-service-key-replace-in-production
+  #   ports:
+  #     - "5002:80"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost/health"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
 
-  plan-service:
-    build:
-      context: ../..
-      dockerfile: services/PlanService/src/Dockerfile
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=mealplannerdb;Username=mealplanner_user;Password=mealPlanner26!
-      - ASPNETCORE_URLS=http://+:80
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ServiceApiKey=internal-service-key-replace-in-production
-    ports:
-      - "5004:80"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+  # meal-service:
+  #   build:
+  #     context: ../..
+  #     dockerfile: services/MealRecipeService/src/Dockerfile
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   environment:
+  #     - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=mealplannerdb;Username=mealplanner_user;Password=mealPlanner26!
+  #     - ASPNETCORE_URLS=http://+:80
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ServiceApiKey=internal-service-key-replace-in-production
+  #   ports:
+  #     - "5003:80"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost/health"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
 
-  frontend:
-    build:
-      context: ../../frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:80"
-    depends_on:
-      auth-service:
-        condition: service_healthy
-      meal-service:
-        condition: service_healthy
-      plan-service:
-        condition: service_healthy
-    restart: unless-stopped
+  # plan-service:
+  #   build:
+  #     context: ../..
+  #     dockerfile: services/PlanService/src/Dockerfile
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   environment:
+  #     - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=mealplannerdb;Username=mealplanner_user;Password=mealPlanner26!
+  #     - ASPNETCORE_URLS=http://+:80
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ServiceApiKey=internal-service-key-replace-in-production
+  #   ports:
+  #     - "5004:80"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost/health"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  # frontend:
+  #   build:
+  #     context: ../../frontend
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "3000:80"
+  #   depends_on:
+  #     auth-service:
+  #       condition: service_healthy
+  #     meal-service:
+  #       condition: service_healthy
+  #     plan-service:
+  #       condition: service_healthy
+  #   restart: unless-stopped
 
 volumes:
-  mealplanningdb_data:
+  # mealplanningdb_data:
+  #   external: true
+  identitydb_data:
+    external: true
+  mealrecipedb_data:
+    external: true
+  plandb_data:  
     external: true
