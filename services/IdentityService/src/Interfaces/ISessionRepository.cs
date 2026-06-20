@@ -6,5 +6,5 @@ public interface ISessionRepository
 {
     Task<Session> CreateAsync(Session session);
     Task<Session?> GetByTokenHashAsync(string tokenHash);
-    Task<bool> RevokeAsync(long id);
+    Task<bool> RevokeAsync(Guid id);
 }

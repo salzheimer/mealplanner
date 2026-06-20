@@ -17,7 +17,7 @@ public partial class UserCredentialsRepository:Interfaces.IUserCredentialsReposi
 
         return await _context.SaveChangesAsync();
     }
-    public async Task<UserCredentials> GetUserCredentials(int userId)
+    public async Task<UserCredentials> GetUserCredentials(Guid userId)
     {
         var creds =  await _context.UserCredentials.FirstOrDefaultAsync(o=>o.UserId == userId);
 

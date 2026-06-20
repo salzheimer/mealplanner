@@ -4,10 +4,10 @@ using Shared.Models;
 using Shared.Services;
 using IdentityService.Models;
 using IdentityService.Interfaces;
+using IdentityService.Services;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using IdentityService.Mappings;
 using System.ComponentModel.DataAnnotations;
 
 namespace IdentityService.Controllers;
@@ -20,13 +20,24 @@ public class AuthController : BaseController
     private readonly ISessionRepository _sessionRepository;
     private readonly TokenService _tokenService;
     private readonly JwtSettings _jwtSettings;
+    private readonly ILookupCache _lookupCache;
+    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IUserService userService, ISessionRepository sessionRepository, TokenService tokenService, JwtSettings jwtSettings)
+    public AuthController(IUserService userService, ISessionRepository sessionRepository, TokenService tokenService, JwtSettings jwtSettings, ILookupCache lookupCache, ILogger<AuthController> logger)
     {
         _userService = userService;
         _sessionRepository = sessionRepository;
         _tokenService = tokenService;
         _jwtSettings = jwtSettings;
+        _lookupCache = lookupCache;
+        _logger = logger;
+    }
+
+    private int ResolveClientTypeId()
+    {
+        var name = Request.Headers["X-Client-Type"].FirstOrDefault()?.ToLowerInvariant() ?? "web";
+        try { return _lookupCache.GetClientTypeId(name); }
+        catch (KeyNotFoundException) { return _lookupCache.GetClientTypeId("web"); }
     }
 
     private static string HashToken(string token)
@@ -90,13 +101,14 @@ public class AuthController : BaseController
     [Authorize]
     public async Task<IActionResult> Logout([FromBody] RefreshRequest request)
     {
+        _logger.LogInformation($"Logout request received for token: {request.RefreshToken}");
         var session = await _sessionRepository.GetByTokenHashAsync(HashToken(request.RefreshToken));
-
+        _logger.LogInformation($"Session lookup result: {(session == null ? "null" : $"found session for user {session.UserId}")}");
         if (session == null || session.RevokedAt != null)
             return HandleResult(Result<bool>.Failure(UserErrors.InvalidRefreshToken));
 
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (!int.TryParse(userIdClaim, out var userId) || session.UserId != userId)
+        if (!Guid.TryParse(userIdClaim, out var userId) || session.UserId != userId)
             return HandleResult(Result<bool>.Failure(UserErrors.Unauthorized));
 
         await _sessionRepository.RevokeAsync(session.Id);
@@ -120,7 +132,7 @@ public class AuthController : BaseController
 
     }
 
-    private async Task<IActionResult> IssueTokens(int userId, string email)
+    private async Task<IActionResult> IssueTokens(Guid userId, string email)
     {
         var accessToken = _tokenService.GenerateToken(userId, email, TimeSpan.FromMinutes(_jwtSettings.ExpiresMinutes));
         var refreshToken = TokenService.GenerateRefreshToken();
@@ -129,7 +141,7 @@ public class AuthController : BaseController
         {
             UserId = userId,
             TokenHash = HashToken(refreshToken),
-            ClientType = EnumMappings.ToEntityClientType(Shared.Models.ClientType.Api),
+            ClientTypeId = ResolveClientTypeId(),
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             ExpiresAt = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays)

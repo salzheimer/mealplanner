@@ -26,7 +26,7 @@ public class SessionRepository : ISessionRepository
             .FirstOrDefaultAsync(s => s.TokenHash == tokenHash);
     }
 
-    public async Task<bool> RevokeAsync(long id)
+    public async Task<bool> RevokeAsync(Guid id)
     {
         var session = await _context.Sessions.FindAsync(id);
         if (session == null) return false;

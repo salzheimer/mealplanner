@@ -1,7 +1,7 @@
 namespace Shared.Models;
 
 public record UserDto(
-    int Id,
+    Guid Id,
     string DisplayName,
     string Email
 );
@@ -12,7 +12,7 @@ public record CreateUserDto(
     
 );
 public record UserResponseDto(
-    int Id,
+    Guid Id,
     string Email,
     string DisplayName
 );

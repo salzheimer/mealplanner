@@ -23,7 +23,7 @@ services:
     environment:
       POSTGRES_USER: mealplanner_user
       POSTGRES_PASSWORD: mealPlanner26!
-      POSTGRES_DB: identitydb
+      POSTGRES_DB: identity_db
     volumes:
       - identitydb_data:/var/lib/postgresql/data
       - ../postgres/identity_db/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -68,25 +68,25 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5      
-  # identity-service:
-  #   build:
-  #     context: ../..
-  #     dockerfile: services/IdentityService/src/Dockerfile
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #   environment:
-  #     - ConnectionStrings__Postgres=Host=identity_db;Port=5433;Database=identitydb;Username=mealplanner_user;Password=mealPlanner26!
-  #     - ASPNETCORE_URLS=http://+:80
-  #     - ASPNETCORE_ENVIRONMENT=Development
-  #     - ServiceApiKey=internal-service-key-replace-in-production
-  #   ports:
-  #     - "5002:80"
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost/health"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
+  identity-service:
+    build:
+      context: ../..
+      dockerfile: services/IdentityService/src/Dockerfile
+    depends_on:
+      identity_db:
+        condition: service_healthy
+    environment:
+      - ConnectionStrings__Identity=Host=identity_db;Port=5432;Database=identity_db;Username=mealplanner_user;Password=mealPlanner26!
+      - ASPNETCORE_URLS=http://+:80
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ServiceApiKey=internal-service-key-replace-in-production
+    ports:
+      - "5002:80"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # meal-service:
   #   build:

@@ -1,8 +1,10 @@
 using IdentityService.Controllers;
 using IdentityService.Models;
 using IdentityService.Interfaces;
+using IdentityService.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Shared.Models;
 using Shared.Services;
@@ -15,31 +17,37 @@ public class AuthControllerTests
 {
     private readonly Mock<IUserService> _userService;
     private readonly Mock<ISessionRepository> _sessionRepository;
+    private readonly Mock<ILookupCache> _lookupCache;
     private readonly TokenService _tokenService;
     private readonly JwtSettings _jwtSettings;
     private readonly AuthController _controller;
-    private const int UserId = 1;
+    private static readonly Guid TestUserId = Guid.Parse("00000000-0000-0000-0000-000000000001");
 
     public AuthControllerTests()
     {
         _userService = new Mock<IUserService>();
         _sessionRepository = new Mock<ISessionRepository>();
+        _lookupCache = new Mock<ILookupCache>();
         _jwtSettings = new JwtSettings("test-issuer", "test-audience", "test-secret-key-must-be-32-chars!!", 60);
         _tokenService = new TokenService(_jwtSettings.Issuer, _jwtSettings.Audience, _jwtSettings.Secret);
 
         _sessionRepository.Setup(s => s.CreateAsync(It.IsAny<Session>()))
             .ReturnsAsync((Session s) => s);
 
+        _lookupCache.Setup(c => c.GetClientTypeId(It.IsAny<string>())).Returns(1);
+
         _controller = new AuthController(
             _userService.Object,
             _sessionRepository.Object,
             _tokenService,
-            _jwtSettings
+            _jwtSettings,
+            _lookupCache.Object,
+            new Mock<ILogger<AuthController>>().Object
         );
-        SetAuthenticatedUser(_controller, UserId);
+        SetAuthenticatedUser(_controller, TestUserId);
     }
 
-    private static void SetAuthenticatedUser(ControllerBase controller, int userId)
+    private static void SetAuthenticatedUser(ControllerBase controller, Guid userId)
     {
         controller.ControllerContext = new ControllerContext
         {
@@ -75,7 +83,7 @@ public class AuthControllerTests
     public async Task Register_UserAlreadyExists_Returns400()
     {
         _userService.Setup(s => s.FindByEmail("alice@example.com"))
-            .ReturnsAsync(Result<UserResponseDto?>.Success(new UserResponseDto(1, "alice@example.com", "alice")));
+            .ReturnsAsync(Result<UserResponseDto>.Success(new UserResponseDto(TestUserId, "alice@example.com", "alice")));
 
         var result = await _controller.Register(new RegisterRequest("alice@example.com", "password123", "alice"));
 
@@ -86,11 +94,11 @@ public class AuthControllerTests
     public async Task Register_ValidNewUser_Returns200WithTokens()
     {
         _userService.Setup(s => s.FindByEmail("alice@example.com"))
-            .ReturnsAsync(Result<UserResponseDto?>.Failure(UserErrors.NotFound));
+            .ReturnsAsync(Result<UserResponseDto>.Failure(UserErrors.NotFound));
         _userService.Setup(s => s.ValidatePassword("password123"))
             .ReturnsAsync(Result<string>.Success(""));
         _userService.Setup(s => s.CreateUserAsync(It.IsAny<CreateUserDto>()))
-            .ReturnsAsync(Result<UserResponseDto>.Success(new UserResponseDto(1, "alice@example.com", "")));
+            .ReturnsAsync(Result<UserResponseDto>.Success(new UserResponseDto(TestUserId, "alice@example.com", "")));
 
         var result = await _controller.Register(new RegisterRequest("alice@example.com", "password123", null));
 
@@ -116,7 +124,7 @@ public class AuthControllerTests
     {
         _userService.Setup(s => s.ValidateCredentials("alice@example.com", "password123")).ReturnsAsync(true);
         _userService.Setup(s => s.FindByEmail("alice@example.com"))
-            .ReturnsAsync(Result<UserResponseDto?>.Success(new UserResponseDto(1, "alice@example.com", "")));
+            .ReturnsAsync(Result<UserResponseDto>.Success(new UserResponseDto(TestUserId, "alice@example.com", "")));
 
         var result = await _controller.Login(new LoginRequest("alice@example.com", "password123"));
 
@@ -131,17 +139,18 @@ public class AuthControllerTests
     [Fact]
     public async Task Refresh_ValidToken_Returns200WithNewTokens()
     {
+        var sessionId = Guid.NewGuid();
         var session = new Session
         {
-            Id = 1L, UserId = 1, TokenHash = "hash",
+            Id = sessionId, UserId = TestUserId, TokenHash = "hash",
             ExpiresAt = DateTime.UtcNow.AddDays(7),
             CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow
         };
 
         _sessionRepository.Setup(s => s.GetByTokenHashAsync(It.IsAny<string>())).ReturnsAsync(session);
-        _sessionRepository.Setup(s => s.RevokeAsync(session.Id)).ReturnsAsync(true);
-        _userService.Setup(s => s.FindById(1))
-            .ReturnsAsync(Result<UserResponseDto?>.Success(new UserResponseDto(1, "alice@example.com", "")));
+        _sessionRepository.Setup(s => s.RevokeAsync(sessionId)).ReturnsAsync(true);
+        _userService.Setup(s => s.FindById(TestUserId))
+            .ReturnsAsync(Result<UserResponseDto>.Success(new UserResponseDto(TestUserId, "alice@example.com", "")));
 
         var result = await _controller.Refresh(new RefreshRequest("valid-refresh-token"));
 
@@ -165,7 +174,7 @@ public class AuthControllerTests
     {
         var session = new Session
         {
-            Id = 1L, UserId = 1, TokenHash = "hash",
+            Id = Guid.NewGuid(), UserId = TestUserId, TokenHash = "hash",
             RevokedAt = DateTime.UtcNow.AddMinutes(-5),
             ExpiresAt = DateTime.UtcNow.AddDays(7),
             CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow
@@ -182,14 +191,15 @@ public class AuthControllerTests
     [Fact]
     public async Task Logout_ValidSession_Returns200()
     {
+        var sessionId = Guid.NewGuid();
         var session = new Session
         {
-            Id = 1L, UserId = UserId, TokenHash = "hash",
+            Id = sessionId, UserId = TestUserId, TokenHash = "hash",
             ExpiresAt = DateTime.UtcNow.AddDays(7),
             CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow
         };
         _sessionRepository.Setup(s => s.GetByTokenHashAsync(It.IsAny<string>())).ReturnsAsync(session);
-        _sessionRepository.Setup(s => s.RevokeAsync(session.Id)).ReturnsAsync(true);
+        _sessionRepository.Setup(s => s.RevokeAsync(sessionId)).ReturnsAsync(true);
 
         var result = await _controller.Logout(new RefreshRequest("valid-token"));
 
@@ -207,6 +217,40 @@ public class AuthControllerTests
         Assert.IsType<BadRequestObjectResult>(result);
     }
 
+    [Fact]
+    public async Task Logout_AlreadyRevokedSession_Returns400()
+    {
+        var session = new Session
+        {
+            Id = Guid.NewGuid(), UserId = TestUserId, TokenHash = "hash",
+            RevokedAt = DateTime.UtcNow.AddMinutes(-5),
+            ExpiresAt = DateTime.UtcNow.AddDays(7),
+            CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow
+        };
+        _sessionRepository.Setup(s => s.GetByTokenHashAsync(It.IsAny<string>())).ReturnsAsync(session);
+
+        var result = await _controller.Logout(new RefreshRequest("revoked-token"));
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Logout_UserIdMismatch_Returns401()
+    {
+        var otherUserId = Guid.Parse("00000000-0000-0000-0000-000000000002");
+        var session = new Session
+        {
+            Id = Guid.NewGuid(), UserId = otherUserId, TokenHash = "hash",
+            ExpiresAt = DateTime.UtcNow.AddDays(7),
+            CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow
+        };
+        _sessionRepository.Setup(s => s.GetByTokenHashAsync(It.IsAny<string>())).ReturnsAsync(session);
+
+        var result = await _controller.Logout(new RefreshRequest("valid-token"));
+
+        Assert.IsType<UnauthorizedObjectResult>(result);
+    }
+
     // --- Validate ---
 
     [Fact]
@@ -220,7 +264,7 @@ public class AuthControllerTests
     [Fact]
     public async Task Validate_ValidToken_ReturnsOk()
     {
-        var token = _tokenService.GenerateToken(1, "alice@example.com", TimeSpan.FromMinutes(60));
+        var token = _tokenService.GenerateToken(TestUserId, "alice@example.com", TimeSpan.FromMinutes(60));
 
         var result = await _controller.Validate(token);
 

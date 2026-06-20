@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace IdentityService.Models;
 
-[Table("user")]
+[Table("users")]
 public class User
 {
    public User(string email,string? displayName)
@@ -45,8 +45,8 @@ public class User
 //          this.Credentials = new UserCredentials( Id, BCrypt.Net.BCrypt.HashPassword(password), "bcrypt", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow);
 //     } 
     [Key]
-    [Column("id")]
-    public int Id{get;set;}
+    [Column("user_id")]
+    public Guid Id{get;set;}
     [Column("display_name")]
     public string? DisplayName{get;set;}
     [Column("email")]

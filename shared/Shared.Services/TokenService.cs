@@ -26,7 +26,7 @@ public class TokenService
         return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
     }
 
-    public string GenerateToken(int userId, string email, TimeSpan expiresIn)
+    public string GenerateToken(Guid userId, string email, TimeSpan expiresIn)
     {
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secret));
         var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);

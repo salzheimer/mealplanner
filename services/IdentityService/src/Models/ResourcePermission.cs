@@ -4,7 +4,7 @@ using Shared.Models;
 
 namespace IdentityService.Models;
 
-[Table("resource_permission")]
+[Table("resource_permissions")]
 public class ResourcePermission
 {
 [Key]

@@ -19,7 +19,7 @@ public partial class UserRepository : Interfaces.IUserRepository
 
     }
 
-    public async Task<User?> GetUser(int id)
+    public async Task<User?> GetUser(Guid id)
     {
         return await _context.Users.FindAsync(id);
 
@@ -31,7 +31,7 @@ public partial class UserRepository : Interfaces.IUserRepository
         
         return dbUser;
     }
-    public async Task<int> Update(int id, User user)
+    public async Task<int> Update(Guid id, User user)
     {
         var dbUser = await _context.Users.FindAsync(id);
         if (dbUser == null)

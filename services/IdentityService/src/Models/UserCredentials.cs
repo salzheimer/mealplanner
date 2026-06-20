@@ -2,10 +2,10 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace IdentityService.Models;
-[Table("user_credential")]
+[Table("user_credentials")]
 public class UserCredentials
 {
-    public UserCredentials( int userId, string passwordHash, string hashAlgorithm, DateTimeOffset createdAt, DateTimeOffset updatedAt)
+    public UserCredentials( Guid userId, string passwordHash, string hashAlgorithm, DateTimeOffset createdAt, DateTimeOffset updatedAt)
     {
         this.Id =Guid.NewGuid();
         this.UserId = userId;
@@ -16,10 +16,10 @@ public class UserCredentials
     }
     public UserCredentials(){}
     [Key]
-    [Column("id")]
+    [Column("user_credential_id")]
     public Guid Id {get;set;}
     [Column("user_id")]
-    public int UserId{get;set;}
+    public Guid UserId{get;set;}
     [Column("password_hash")]
     public string PasswordHash{get;set;}
     [Column("hash_algorithm")]

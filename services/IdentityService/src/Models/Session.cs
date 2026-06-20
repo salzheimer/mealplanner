@@ -4,21 +4,21 @@ using Shared.Models;
 
 namespace IdentityService.Models;
 
-[Table("session")]
+[Table("sessions")]
 public class Session
 {
     [Key]
-    [Column("id")]
-    public long Id { get; set; }
+    [Column("session_id")]
+    public Guid Id { get; set; }= Guid.NewGuid();
 
     [Column("user_id")]
-    public int UserId { get; set; }
+    public Guid UserId { get; set; }
 
     [Column("token_hash")]
     public string TokenHash { get; set; } = string.Empty;
 
-    [Column("client_type")]
-    public ClientType ClientType { get; set; } = ClientType.Api;
+    [Column("client_type_id")]
+    public int ClientTypeId { get; set; }
 
     [Column("device_info")]
     public string? DeviceInfo { get; set; }
@@ -27,17 +27,17 @@ public class Session
     public string? IpAddress { get; set; }
 
     [Column("created_at")]
-    public DateTime CreatedAt { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
 
     [Column("updated_at")]
-    public DateTime UpdatedAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
 
     [Column("last_used_at")]
-    public DateTime? LastUsedAt { get; set; }
+    public DateTimeOffset? LastUsedAt { get; set; }
 
     [Column("revoked_at")]
-    public DateTime? RevokedAt { get; set; }
+    public DateTimeOffset? RevokedAt { get; set; }
 
     [Column("expires_at")]
-    public DateTime ExpiresAt { get; set; }
+    public DateTimeOffset ExpiresAt { get; set; }
 }

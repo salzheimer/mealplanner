@@ -6,10 +6,16 @@ using Shared.Models;
 namespace IdentityService.Controllers;
 public class BaseController : ControllerBase
 {
-     internal int? GetAuthenticatedUserId()
+    internal int? GetAuthenticatedUserId()
     {
         var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         return int.TryParse(claim, out var id) ? id : null;
+    }
+
+    internal Guid? GetAuthenticatedUserGuid()
+    {
+        var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return Guid.TryParse(claim, out var id) ? id : null;
     }
     protected IActionResult HandleResult<T>(Result<T> result)
     {

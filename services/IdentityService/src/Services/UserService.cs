@@ -56,7 +56,7 @@ public class UserService : IUserService
         return Result<UserResponseDto>.Success(new UserResponseDto(user.Id, user.Email, string.IsNullOrEmpty(user.DisplayName) ? string.Empty : user.DisplayName));
     }
 
-    public async Task<Result<UserResponseDto>> FindById(int id)
+    public async Task<Result<UserResponseDto>> FindById(Guid id)
     {
         var user = await _userRepository.GetUser(id);
         if (user is null) return Result<UserResponseDto>.Failure(UserErrors.NotFound);
