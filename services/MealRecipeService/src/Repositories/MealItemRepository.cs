@@ -5,21 +5,24 @@ namespace MealRecipeService.Repositories;
 
 public class MealItemRepository : Interfaces.IMealItemRepository
 {
-    private readonly MealDbContext _context;
+    private readonly MealRecipeDbContext _context;
 
-    public MealItemRepository(MealDbContext context)
+    public MealItemRepository(MealRecipeDbContext context)
     {
         _context = context;
     }
 
-    public async Task<MealItem?> GetByIdAsync(int id)
+    private IQueryable<MealItem> WithLookups() =>
+        _context.MealItems.Include(mi => mi.ItemType);
+
+    public async Task<MealItem?> GetByIdAsync(Guid id)
     {
-        return await _context.MealItems.FindAsync(id);
+        return await WithLookups().FirstOrDefaultAsync(mi => mi.Id == id);
     }
 
-    public async Task<IEnumerable<MealItem>> GetByMealIdAsync(int mealId)
+    public async Task<IEnumerable<MealItem>> GetByMealIdAsync(Guid mealId)
     {
-        return await _context.MealItems.Where(mi => mi.MealId == mealId).ToListAsync();
+        return await WithLookups().Where(mi => mi.MealId == mealId).ToListAsync();
     }
 
     public async Task<MealItem?> CreateAsync(MealItem mealItem)
@@ -37,7 +40,7 @@ public class MealItemRepository : Interfaces.IMealItemRepository
         return result > 0;
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(Guid id)
     {
         var mealItem = await _context.MealItems.FindAsync(id);
         if (mealItem == null)

@@ -1,21 +1,23 @@
 using Shared.Models;
+using MealRecipeService.Contracts;
 
 namespace MealRecipeService.Interfaces;
 
 public interface IMealService
 {
     // Meal operations
-    Task<Result<MealDto>> GetMealByIdAsync(int userId, int id);
-    Task<Result<IEnumerable<MealDto>>> GetMealsSharedWithMeAsync(int userId);
-    Task<Result<MealDto>> CreateMealAsync(int userId, MealCreateDto mealDto);
-    Task<Result<MealDto>> UpdateMealAsync(int userId, MealUpdateDto mealDto);
-    Task<Result<bool>> DeleteMealAsync(int userId, int id);
-    Task<Result<MealDto>> CloneMealAsync(int userId, int mealId);
+    Task<Result<MealDetailResponse>> GetMealByIdAsync(Guid userId, Guid mealId);
+    Task<Result<IEnumerable<MealSummaryResponse>>> GetAllMealsAsync(Guid userId);
+    Task<Result<IEnumerable<MealSummaryResponse>>> GetMealsSharedWithMeAsync(Guid userId);
+    Task<Result<MealDetailResponse>> CreateMealAsync(Guid userId, CreateMealRequest MealDetailResponse);
+    Task<Result<MealDetailResponse>> UpdateMealAsync(Guid userId, UpdateMealRequest MealDetailResponse);
+    Task<Result<bool>> DeleteMealAsync(Guid userId, Guid mealId);
+    Task<Result<MealDetailResponse>> CloneMealAsync(Guid userId, Guid mealId);
     // MealItem operations
-    Task<Result<MealItemDto>> AddMealItemAsync(int userId, MealItemCreateDto mealItemDto);
-    Task<Result<MealItemDto>> UpdateMealItemAsync(int userId, MealItemUpdateDto mealItemDto);
-    Task<Result<IEnumerable<MealItemDto>>> GetMealItemByMealIdAsync(int userId, int mealId);
-    Task<Result<bool>> DeleteMealItemAsync(int userId, int mealItemId);
+    Task<Result<MealItemDetailResponse>> AddMealItemAsync(Guid userId, CreateMealItemRequest MealItemDetailResponse);
+    Task<Result<MealItemDetailResponse>> UpdateMealItemAsync(Guid userId, UpdateMealItemRequest MealItemDetailResponse);
+    Task<Result<IEnumerable<MealItemDetailResponse>>> GetMealItemsByMealIdAsync(Guid userId, Guid mealId);
+    Task<Result<bool>> DeleteMealItemAsync(Guid userId, Guid mealItemId);
     // Meal share operations
-    Task<Result<ResourcePermissionDto>> ShareMealAsync(int userId, int mealId, ShareRequestDto request);
+    Task<Result<ShareMealResponse>> ShareMealAsync(ShareMealRequest shareMealRequest);
 }

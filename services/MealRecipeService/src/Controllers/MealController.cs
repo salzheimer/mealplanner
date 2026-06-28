@@ -1,3 +1,4 @@
+using MealRecipeService.Contracts;
 using MealRecipeService.Interfaces;
 
 using Microsoft.AspNetCore.Authorization;
@@ -22,35 +23,35 @@ public class MealController : BaseController
 
     // Meal endpoints
 
-    [HttpGet("{id:int}")]
-       public async Task<IActionResult> GetMeal(int id)
+    [HttpGet("{id:Guid}")]
+    public async Task<IActionResult> GetMeal(Guid id)
     {
         var userId = GetAuthenticatedUserId();
         if (userId == null)
-            return HandleResult(Result<MealDto>.Failure(MealErrors.Unauthorized));
+            return HandleResult(Result<MealDetailResponse>.Failure(MealErrors.Unauthorized));
         return HandleResult(await _mealService.GetMealByIdAsync(userId.Value, id));
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateMeal([FromBody] MealCreateDto meal)
+    public async Task<IActionResult> CreateMeal([FromBody] CreateMealRequest meal)
     {
         var userId = GetAuthenticatedUserId();
         if (userId == null)
-            return HandleResult(Result<MealDto>.Failure(MealErrors.Unauthorized));
+            return HandleResult(Result<MealDetailResponse>.Failure(MealErrors.Unauthorized));
         return HandleResult(await _mealService.CreateMealAsync(userId.Value, meal));
     }
 
     [HttpPut]
-    public async Task<IActionResult> UpdateMeal([FromBody] MealUpdateDto meal)
+    public async Task<IActionResult> UpdateMeal([FromBody] UpdateMealRequest meal)
     {
         var userId = GetAuthenticatedUserId();
         if (userId == null)
-            return HandleResult(Result<MealDto>.Failure(MealErrors.Unauthorized));
+            return HandleResult(Result<MealDetailResponse>.Failure(MealErrors.Unauthorized));
         return HandleResult(await _mealService.UpdateMealAsync(userId.Value, meal));
     }
 
-    [HttpDelete("{id:int}")]
-    public async Task<IActionResult> DeleteMeal(int id)
+    [HttpDelete("{id:Guid}")]
+    public async Task<IActionResult> DeleteMeal(Guid id)
     {
         var userId = GetAuthenticatedUserId();
         if (userId == null)
@@ -58,76 +59,82 @@ public class MealController : BaseController
         return HandleResult(await _mealService.DeleteMealAsync(userId.Value, id));
     }
 
-    [HttpPost("{mealId:int}/clone")]
-    public async Task<IActionResult> CloneMeal(int mealId)
+    [HttpPost("{mealId:Guid}/clone")]
+    public async Task<IActionResult> CloneMeal(Guid mealId)
     {
         var userId = GetAuthenticatedUserId();
         if (userId == null)
-            return HandleResult(Result<MealDto>.Failure(MealErrors.Unauthorized));
+            return HandleResult(Result<MealDetailResponse>.Failure(MealErrors.Unauthorized));
         return HandleResult(await _mealService.CloneMealAsync(userId.Value, mealId));
     }
 
-    [HttpPost("{mealId:int}/share")]
-    public async Task<IActionResult> ShareMeal(int mealId, [FromBody] ShareRequestDto request)
+    [HttpPost("{mealId:Guid}/share")]
+    public async Task<IActionResult> ShareMeal(int mealId, [FromBody] ShareMealRequest request)
     {
         var userId = GetAuthenticatedUserId();
         if (userId == null)
-            return HandleResult(Result<ResourcePermissionDto>.Failure(MealErrors.Unauthorized));
-        return HandleResult(await _mealService.ShareMealAsync(userId.Value, mealId, request));
+            return HandleResult(Result<ShareRecipeResponse>.Failure(MealErrors.Unauthorized));
+        return HandleResult(await _mealService.ShareMealAsync(request));
     }
     [HttpGet("shared-with-me")]
     public async Task<IActionResult> MealsSharedWithMe()
     {
         var userId = GetAuthenticatedUserId();
-         if (userId == null)
-            return HandleResult(Result<ResourcePermissionDto>.Failure(MealErrors.Unauthorized));
+        if (userId == null)
+            return HandleResult(Result<ShareMealResponse>.Failure(MealErrors.Unauthorized));
 
-            return HandleResult(await _mealService.GetMealsSharedWithMeAsync(userId.Value));
+        return HandleResult(await _mealService.GetMealsSharedWithMeAsync(userId.Value));
     }
     // MealItem endpoints
 
-    [HttpGet("{mealId:int}/recipes")]
-    public async Task<IActionResult> GetRecipes(int mealId)
+    /// <summary>
+    /// Get recipes associated with a meal
+    /// </summary>
+    /// <param name="mealId"></param>
+    /// <returns>List of recipe details</returns>
+    [HttpGet("{mealId:Guid}/recipes")]
+    public async Task<IActionResult> GetRecipes(Guid mealId)
     {
         var userId = GetAuthenticatedUserId();
         if (userId == null)
-            return HandleResult(Result<IEnumerable<RecipeSummaryDto>>.Failure(MealErrors.Unauthorized));
+            return HandleResult(Result<IEnumerable<MealDetailResponse>>.Failure(MealErrors.Unauthorized));
 
-        var mealItemResult = await _mealService.GetMealItemByMealIdAsync(userId.Value, mealId);
+        var mealItemResult = await _mealService.GetMealItemsByMealIdAsync(userId.Value, mealId);
         if (!mealItemResult.IsSuccess || mealItemResult.Value == null)
-            return HandleResult(Result<IEnumerable<RecipeDetailDto>>.Failure(MealItemErrors.NotFoundMeal));
+            return HandleResult(Result<IEnumerable<MealDetailResponse>>.Failure(MealItemErrors.NotFoundMeal));
 
-        var recipeDtos = new List<RecipeDetailDto>();
+        var recipeDtos = new List<RecipeDetailResponse>();
         foreach (var mealItem in mealItemResult.Value)
-        {   if(mealItem.ItemType != Shared.Models.ItemType.Recipe || mealItem.RecipeId == null)
+        {
+            if (mealItem.ItemTypeName != "recipe" || mealItem.RecipeId == null)
                 continue;
             var recipeResult = await _recipeService.GetRecipeDetailAsync(userId.Value, mealItem.RecipeId.Value);
             if (recipeResult.IsSuccess && recipeResult.Value != null)
                 recipeDtos.Add(recipeResult.Value);
         }
-        return HandleResult(Result<IEnumerable<RecipeDetailDto>>.Success(recipeDtos));
+        return HandleResult(Result<IEnumerable<RecipeDetailResponse>>.Success(recipeDtos));
     }
 
-    [HttpPost("{mealId:int}/items")]
-    public async Task<IActionResult> AddMealItem(int mealId, [FromBody] MealItemCreateDto mealItem)
+    [HttpPost("{mealId:Guid}/items")]
+    public async Task<IActionResult> AddMealItem(Guid mealId, [FromBody] CreateMealItemRequest mealItem)
     {
         var userId = GetAuthenticatedUserId();
         if (userId == null)
-            return HandleResult(Result<MealItemDto>.Failure(MealErrors.Unauthorized));
+            return HandleResult(Result<MealItemResponse>.Failure(MealErrors.Unauthorized));
         return HandleResult(await _mealService.AddMealItemAsync(userId.Value, mealItem with { MealId = mealId }));
     }
 
     [HttpPut("items")]
-    public async Task<IActionResult> UpdateMealItem([FromBody] MealItemUpdateDto mealItem)
+    public async Task<IActionResult> UpdateMealItem([FromBody] UpdateMealItemRequest mealItem)
     {
         var userId = GetAuthenticatedUserId();
         if (userId == null)
-            return HandleResult(Result<MealItemDto>.Failure(MealErrors.Unauthorized));
+            return HandleResult(Result<MealItemResponse>.Failure(MealErrors.Unauthorized));
         return HandleResult(await _mealService.UpdateMealItemAsync(userId.Value, mealItem));
     }
 
-    [HttpDelete("items/{mealItemId:int}")]
-    public async Task<IActionResult> DeleteMealItem(int mealItemId)
+    [HttpDelete("items/{mealItemId:Guid}")]
+    public async Task<IActionResult> DeleteMealItem(Guid mealItemId)
     {
         var userId = GetAuthenticatedUserId();
         if (userId == null)

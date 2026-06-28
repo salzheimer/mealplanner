@@ -5,9 +5,9 @@ namespace MealRecipeService.Repositories;
 
 public class RecipeIngredientRepository : Interfaces.IRecipeIngredientRepository
 {
-    private readonly MealDbContext _context;
+    private readonly MealRecipeDbContext _context;
 
-    public RecipeIngredientRepository(MealDbContext context)
+    public RecipeIngredientRepository(MealRecipeDbContext context)
     {
         _context = context;
     }

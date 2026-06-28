@@ -7,13 +7,13 @@ namespace MealRecipeService.Repositories;
 
 public class RecipeRepository : Interfaces.IRecipeRepository
 {
-    private readonly MealDbContext _context;
+    private readonly MealRecipeDbContext _context;
 
-    public RecipeRepository(MealDbContext context)
+    public RecipeRepository(MealRecipeDbContext context)
     {
         _context = context;
     }
-    public async Task<Recipe?> GetByIdAsync(int id)
+    public async Task<Recipe?> GetByIdAsync(Guid id)
     {
         return await _context.Recipes.FindAsync(id);
     }
@@ -35,7 +35,7 @@ public class RecipeRepository : Interfaces.IRecipeRepository
         var result = await _context.SaveChangesAsync();
         return result > 0;
     }
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(Guid id)
     {
         var recipe = await _context.Recipes.FindAsync(id);
         if (recipe == null)
@@ -47,12 +47,13 @@ public class RecipeRepository : Interfaces.IRecipeRepository
         return result > 0;
     }
 
-    public async Task<IEnumerable<Recipe>> GetByOwnerIdAsync(int ownerId)
+    public async Task<IEnumerable<Recipe>> GetByOwnerIdAsync(Guid ownerId)
     {
         return await _context.Recipes.Where(r => r.OwnerUserId == ownerId).ToListAsync();
     }
-    public async Task<IEnumerable<Recipe>> GetByIdsAsync(HashSet<int> sharedRecipeIds)
+
+    public async Task<IEnumerable<Recipe>> GetByIdsAsync(HashSet<Guid> recipeIds)
     {
-        return await _context.Recipes.Where(r => sharedRecipeIds.Contains(r.Id)).ToListAsync();
+       return await _context.Recipes.Where(r=> recipeIds.Contains(r.Id)).ToListAsync();
     }
 }

@@ -6,6 +6,7 @@ public static class RecipeErrors
     public static readonly Error UnableToUpdate = new("Recipe.UnableToUpdate", "Failed to update recipe.", ErrorType.Failure);
     public static readonly Error UnableToCreate = new("Recipe.UnableToCreate", "Failed to create recipe.", ErrorType.Failure);
     public static readonly Error UnableToDelete = new("Recipe.UnableToDelete", "Failed to delete recipe.", ErrorType.Failure);
+    public static readonly Error UnableToShare = new("Recipe.UnableToShare", "Failed to share recipe.", ErrorType.Failure);
     public static readonly Error Unauthorized = new("Recipe.Unauthorized", "You do not have permission to access this recipe.", ErrorType.Unauthorized);
     public static readonly Error InvalidInput = new("Recipe.InvalidInput", "Invalid input data for recipe.", ErrorType.InvalidInput);
     public static readonly Error ShareNotFound = new("RecipeShare.NotFound", "Recipe share not found.", ErrorType.NotFound);
@@ -45,6 +46,7 @@ public static class MealErrors
     public static readonly Error UnableToUpdate = new("Meal.UnableToUpdate", "Failed to update meal.", ErrorType.BadRequest);
     public static readonly Error UnableToCreate = new("Meal.UnableToCreate", "Failed to create meal.", ErrorType.BadRequest);
     public static readonly Error UnableToDelete = new("Meal.UnableToDelete", "Failed to delete meal.", ErrorType.BadRequest);
+     public static readonly Error UnableToShare = new("Meal.UnableToShare", "Failed to share meal.", ErrorType.BadRequest);
     public static readonly Error Unauthorized = new("Meal.Unauthorized", "You do not have permission to access this meal.", ErrorType.Unauthorized);
     public static readonly Error InvalidInput = new("Meal.InvalidInput", "Invalid input data for meal.", ErrorType.InvalidInput);
 }
@@ -73,4 +75,30 @@ public static class MealShareErrors
     public static readonly Error NotFoundPlan = new("MealShare.PlanNotFound", "Associated plan not found.", ErrorType.NotFound);
     public static readonly Error Unauthorized = new("MealShare.Unauthorized", "You do not have permission to access this meal share.", ErrorType.Unauthorized);
     public static readonly Error InvalidInput = new("MealShare.InvalidInput", "Invalid input data for meal share.", ErrorType.InvalidInput);
+}
+
+public static class ResourceTypeErrors
+{
+    public static readonly Error UnableToCreate = new("ResourceType.UnableToCreate", "Unable to create Resource Type", ErrorType.BadRequest);
+    public static readonly Error InvalidType = new("ResourceType.InvalidType", "Unable to locate Resource Type", ErrorType.NotFound);
+    public static readonly Error Unauthorized = new("ResourceType.Unauthorized", "You do not have permission to access resource types.", ErrorType.Unauthorized);
+}
+public static class PermissionTypeErrors
+{
+    public static readonly Error UnableToCreate = new("PermissionType.UnableToCreate", "Unable to create Permission Type", ErrorType.BadRequest);
+    public static readonly Error InvalidType = new("PermissionType.InvalidType", "Unable to locate Permission Type", ErrorType.NotFound);
+    public static readonly Error Unauthorized = new("PermissionType.Unauthorized", "You do not have permission to access permission types.", ErrorType.Unauthorized);
+}
+public static class SubjectTypeErrors
+{
+    public static readonly Error UnableToCreate = new("SubjectType.UnableToCreate", "Unable to create Subject Type", ErrorType.BadRequest);
+    public static readonly Error InvalidType = new("SubjectType.InvalidType", "Unable to locate Subject Type", ErrorType.NotFound);
+    public static readonly Error Unauthorized = new("SubjectType.Unauthorized", "You do not have permission to access subject types.", ErrorType.Unauthorized);
+}
+public static class ResourcePermissionErrors
+{
+    public static readonly Error UnableToCreate = new("ResourcePermission.UnableToCreate", "Unable to grant access to resource", ErrorType.BadRequest);
+    public static readonly Error InvalidType = new("ResourcePermission.InvalidType", "Unable to locate resource permissions", ErrorType.NotFound);
+    public static readonly Error Unauthorized = new("ResourcePermission.Unauthorized", "You do not have permission to access.", ErrorType.Unauthorized);
+    public static readonly Error UnableToDelete = new("ResourcePermission.UnableToDelete", "Failed to revoke access.", ErrorType.BadRequest);
 }

@@ -6,9 +6,10 @@ namespace MealRecipeService.Models;
 public class RecipeIngredient
 {
     [Key]
-    public int Id { get; set; }
+    [Column("recipe_ingredient_id")]
+    public Guid Id { get; set; }
     [Column("recipe_id")]
-    public int RecipeId { get; set; }
+    public Guid RecipeId { get; set; }
     [Column("name")]
     public string? Name { get; set; }
     [Column("amount")]
@@ -22,7 +23,7 @@ public class RecipeIngredient
     [Column("updated_at")]
     public DateTime UpdatedAt { get; set; }
     [Column("created_by")]
-    public int CreatedBy { get; set; }
+    public Guid CreatedBy { get; set; }
     [Column("updated_by")]
-    public int UpdatedBy { get; set; }
+    public Guid UpdatedBy { get; set; }
 }

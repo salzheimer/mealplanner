@@ -8,6 +8,9 @@ using MealRecipeService.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+
 // Basic services
 builder.Services.AddHealthChecks();
 
@@ -52,6 +55,14 @@ builder.Services.AddScoped<IRecipeIngredientRepository, RecipeIngredientReposito
 builder.Services.AddScoped<IRecipeInstructionRepository, RecipeInstructionRepository>();
 builder.Services.AddScoped<IMealRepository, MealRepository>();
 builder.Services.AddScoped<IMealItemRepository, MealItemRepository>();
+builder.Services.AddScoped<IMealTypeRepository, MealTypeRepository>();
+builder.Services.AddScoped<IMealItemTypeRepository, MealItemTypeRepository>();
+builder.Services.AddScoped<IResourcePermissionRepository, ResourcePermissionRepository>();
+builder.Services.AddScoped<ICachedUserRepository, CachedUserRepository>();
+builder.Services.AddScoped<ICachedGroupRepository, CachedGroupRepository>();
+builder.Services.AddScoped<IResourceTypeRepository, ResourceTypeRepository>();
+builder.Services.AddScoped<ISubjectTypeRepository, SubjectTypeRepository>();
+builder.Services.AddScoped<IPermissionTypeRepository,PermissionTypeRepository>();
 // Services
 builder.Services.AddScoped<IRecipeService, RecipeService>();
 builder.Services.AddScoped<IMealService, MealService>();
@@ -60,8 +71,8 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IIdentityServiceClient, IdentityServiceClient>();
 
 //Database
-var conn = builder.Configuration.GetConnectionString("Postgres");
-builder.Services.AddDbContext<MealDbContext>(options=>options.UseNpgsql(conn));
+var conn = builder.Configuration.GetConnectionString("MealRecipe");
+builder.Services.AddDbContext<MealRecipeDbContext>(options=>options.UseNpgsql(conn));
 
 
 var app = builder.Build();
@@ -77,7 +88,12 @@ app.MapControllers();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    app.MapScalarApiReference();
+    app.MapScalarApiReference(options =>
+    {
+        options.WithTitle("Meal Recipe Service API");
+        options.AddHttpAuthentication("Bearer", _ => { });
+         
+    });
 }
 
 app.Run();

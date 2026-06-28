@@ -7,9 +7,10 @@ namespace MealRecipeService.Models;
 public class RecipeInstruction
 {
     [Key]
-    public int Id { get; set; }
+    [Column("recipe_instruction_id")]
+    public Guid Id { get; set; }
     [Column("recipe_id")]
-    public int RecipeId { get; set; }
+    public Guid RecipeId { get; set; }
     [Column("step_number")]
     public int? StepNumber { get; set; }
     [Column("description")]
@@ -21,7 +22,7 @@ public class RecipeInstruction
     [Column("updated_at")]
     public DateTime UpdatedAt { get; set; }
     [Column("created_by")]
-    public int CreatedBy { get; set; }
+    public Guid CreatedBy { get; set; }
     [Column("updated_by")]
-    public int UpdatedBy { get; set; }
+    public Guid UpdatedBy { get; set; }
 }

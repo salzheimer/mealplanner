@@ -17,7 +17,7 @@ services:
   #     interval: 10s
   #     timeout: 5s
   #     retries: 5
-  identity_db:
+  identity-db:
     image: postgres:17
     container_name: identity-database-container
     environment:
@@ -73,10 +73,10 @@ services:
       context: ../..
       dockerfile: services/IdentityService/src/Dockerfile
     depends_on:
-      identity_db:
+      identity-db:
         condition: service_healthy
     environment:
-      - ConnectionStrings__Identity=Host=identity_db;Port=5432;Database=identity_db;Username=mealplanner_user;Password=mealPlanner26!
+      - ConnectionStrings__Identity=Host=identity-db;Port=5432;Database=identity_db;Username=mealplanner_user;Password=mealPlanner26!
       - ASPNETCORE_URLS=http://+:80
       - ASPNETCORE_ENVIRONMENT=Development
       - ServiceApiKey=internal-service-key-replace-in-production
@@ -88,25 +88,25 @@ services:
       timeout: 5s
       retries: 5
 
-  # meal-service:
-  #   build:
-  #     context: ../..
-  #     dockerfile: services/MealRecipeService/src/Dockerfile
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #   environment:
-  #     - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=mealplannerdb;Username=mealplanner_user;Password=mealPlanner26!
-  #     - ASPNETCORE_URLS=http://+:80
-  #     - ASPNETCORE_ENVIRONMENT=Development
-  #     - ServiceApiKey=internal-service-key-replace-in-production
-  #   ports:
-  #     - "5003:80"
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost/health"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
+  meal-recipe-service:
+    build:
+      context: ../..
+      dockerfile: services/MealRecipeService/src/Dockerfile
+    depends_on:
+      meal-recipe-db:
+        condition: service_healthy
+    environment:
+      - ConnectionStrings__MealRecipe=Host=meal-recipe-db;Port=5432;Database=mealrecipe_db;Username=mealplanner_user;Password=mealPlanner26!
+      - ASPNETCORE_URLS=http://+:80
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ServiceApiKey=internal-service-key-replace-in-production
+    ports:
+      - "5003:80"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # plan-service:
   #   build:

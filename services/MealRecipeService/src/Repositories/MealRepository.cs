@@ -6,25 +6,29 @@ namespace MealRecipeService.Repositories;
 
 public class MealRepository : Interfaces.IMealRepository
 {
-    private readonly MealDbContext _context;
+    private readonly MealRecipeDbContext _context;
 
-    public MealRepository(MealDbContext context)
+    public MealRepository(MealRecipeDbContext context)
     {
         _context = context;
     }
 
-    public async Task<Meal?> GetByIdAsync(int id)
+    private IQueryable<Meal> WithLookups() =>
+        _context.Meals.Include(m => m.MealType);
+
+    public async Task<Meal?> GetByIdAsync(Guid id)
     {
-        return await _context.Meals.FindAsync(id);
+        return await WithLookups().FirstOrDefaultAsync(m => m.Id == id);
     }
 
-    public async Task<IEnumerable<Meal>> GetByOwnerIdAsync(int userId)
+    public async Task<IEnumerable<Meal>> GetByOwnerIdAsync(Guid userId)
     {
-        return await _context.Meals.Where(m => m.OwnerUserId == userId).ToListAsync();
+        return await WithLookups().Where(m => m.OwnerUserId == userId).ToListAsync();
     }
-    public async Task<IEnumerable<Meal>> GetByIdsAsync(HashSet<int> sharedMealIds)
+
+    public async Task<IEnumerable<Meal>> GetByIdsAsync(HashSet<Guid> sharedMealIds)
     {
-        return await _context.Meals.Where(r => sharedMealIds.Contains(r.Id)).ToListAsync();
+        return await WithLookups().Where(m => sharedMealIds.Contains(m.Id)).ToListAsync();
     }
     public async Task<Meal?> CreateAsync(Meal meal)
     {
@@ -41,7 +45,7 @@ public class MealRepository : Interfaces.IMealRepository
         return result > 0;
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(Guid id)
     {
         var meal = await _context.Meals.FindAsync(id);
         if (meal == null)
