@@ -1,3 +1,4 @@
+using MealRecipeService.Contracts;
 using MealRecipeService.Controllers;
 using MealRecipeService.Interfaces;
 using Microsoft.AspNetCore.Http;
@@ -13,7 +14,11 @@ public class RecipesControllerTests
 {
     private readonly Mock<IRecipeService> _recipeService;
     private readonly RecipesController _controller;
-    private const int UserId = 1;
+    private static readonly Guid UserId       = new("10000000-0000-0000-0000-000000000001");
+    private static readonly Guid RecipeId     = new("20000000-0000-0000-0000-000000000001");
+    private static readonly Guid IngredientId = new("30000000-0000-0000-0000-000000000001");
+    private static readonly Guid InstructionId = new("40000000-0000-0000-0000-000000000001");
+    private static readonly Guid SubjectId    = new("50000000-0000-0000-0000-000000000001");
 
     public RecipesControllerTests()
     {
@@ -22,7 +27,7 @@ public class RecipesControllerTests
         SetAuthenticatedUser(_controller, UserId);
     }
 
-    private static void SetAuthenticatedUser(ControllerBase controller, int userId)
+    private static void SetAuthenticatedUser(ControllerBase controller, Guid userId)
     {
         controller.ControllerContext = new ControllerContext
         {
@@ -36,27 +41,26 @@ public class RecipesControllerTests
         };
     }
 
-    private static RecipeSummaryDto MakeSummary(int id = 1) => new(
-        id, "Pasta Carbonara", "A classic Italian dish", null, 4, null,
-        TimeSpan.FromMinutes(20), TimeSpan.FromMinutes(10), 4, 1
+    private static RecipeSummaryResponse MakeSummary(Guid? id = null) => new(
+        id ?? RecipeId, "Pasta Carbonara", "A classic Italian dish", null,
+        4, null, TimeSpan.FromMinutes(20), TimeSpan.FromMinutes(10), 4, UserId
     );
 
-    private static RecipeDetailDto MakeRecipe(int id = 1) => new(
-        id, "Pasta Carbonara", "A classic Italian dish", "Rich and creamy", 4, null,
-        TimeSpan.FromMinutes(20), TimeSpan.FromMinutes(10), 4, 1,
-        null, null
+    private static RecipeDetailResponse MakeDetail(Guid? id = null) => new(
+        id ?? RecipeId, "Pasta Carbonara", "A classic Italian dish", null,
+        4, null, TimeSpan.FromMinutes(20), TimeSpan.FromMinutes(10), 4, UserId, null, null
     );
 
-    private static RecipeIngredientSummaryDto MakeIngredientSummary(int id = 1, int recipeId = 1) => new(
-        id, recipeId, "Bacon", 200m, "grams", null
+    private static RecipeIngredientSummaryResponse MakeIngredient(Guid? id = null) => new(
+        id ?? IngredientId, RecipeId, "Bacon", 200m, "grams", null
     );
 
-    private static RecipeInstructionDto MakeInstruction(int id = 1, int recipeId = 1) => new(
-        id, recipeId, 1, "Boil pasta", null
+    private static RecipeInstructionResponse MakeInstruction(Guid? id = null) => new(
+        id ?? InstructionId, RecipeId, 1, "Boil pasta", null
     );
 
-    private static ResourcePermissionDto MakePermission(int recipeId = 1) => new(
-        1, ResourceType.Recipe, recipeId, SubjectType.User, 2, Permission.View, UserId
+    private static ShareRecipeResponse MakeShareResponse() => new(
+        RecipeId, "recipe", 1, "user", 2, "view", 3, SubjectId, UserId, null
     );
 
     // --- GetAll ---
@@ -64,14 +68,14 @@ public class RecipesControllerTests
     [Fact]
     public async Task GetAll_Success_Returns200WithRecipes()
     {
-        var summaries = new List<RecipeSummaryDto> { MakeSummary(1), MakeSummary(2) };
+        var summaries = new List<RecipeSummaryResponse> { MakeSummary(), MakeSummary(Guid.NewGuid()) };
         _recipeService.Setup(s => s.GetAllRecipesAsync(UserId))
-            .ReturnsAsync(Result<IEnumerable<RecipeSummaryDto>>.Success(summaries));
+            .ReturnsAsync(Result<IEnumerable<RecipeSummaryResponse>>.Success(summaries));
 
         var result = await _controller.GetAll();
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsAssignableFrom<IEnumerable<RecipeSummaryDto>>(ok.Value);
+        var value = Assert.IsAssignableFrom<IEnumerable<RecipeSummaryResponse>>(ok.Value);
         Assert.Equal(2, value.Count());
     }
 
@@ -79,7 +83,7 @@ public class RecipesControllerTests
     public async Task GetAll_ServiceFailure_Returns404()
     {
         _recipeService.Setup(s => s.GetAllRecipesAsync(UserId))
-            .ReturnsAsync(Result<IEnumerable<RecipeSummaryDto>>.Failure(RecipeErrors.NotFound));
+            .ReturnsAsync(Result<IEnumerable<RecipeSummaryResponse>>.Failure(RecipeErrors.NotFound));
 
         var result = await _controller.GetAll();
 
@@ -91,24 +95,52 @@ public class RecipesControllerTests
     [Fact]
     public async Task GetFullRecipe_ExistingId_Returns200WithRecipe()
     {
-        _recipeService.Setup(s => s.GetRecipeDetailAsync(UserId, 1))
-            .ReturnsAsync(Result<RecipeDetailDto>.Success(MakeRecipe(1)));
+        _recipeService.Setup(s => s.GetRecipeDetailAsync(UserId, RecipeId))
+            .ReturnsAsync(Result<RecipeDetailResponse>.Success(MakeDetail()));
 
-        var result = await _controller.GetFullRecipe(1);
+        var result = await _controller.GetFullRecipe(RecipeId);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsType<RecipeDetailDto>(ok.Value);
-        Assert.Equal(1, value.Id);
+        var value = Assert.IsType<RecipeDetailResponse>(ok.Value);
+        Assert.Equal(RecipeId, value.Id);
         Assert.Equal("Pasta Carbonara", value.Name);
     }
 
     [Fact]
     public async Task GetFullRecipe_NonExistentId_Returns404()
     {
-        _recipeService.Setup(s => s.GetRecipeDetailAsync(UserId, 999))
-            .ReturnsAsync(Result<RecipeDetailDto>.Failure(RecipeErrors.NotFound));
+        var unknownId = Guid.NewGuid();
+        _recipeService.Setup(s => s.GetRecipeDetailAsync(UserId, unknownId))
+            .ReturnsAsync(Result<RecipeDetailResponse>.Failure(RecipeErrors.NotFound));
 
-        var result = await _controller.GetFullRecipe(999);
+        var result = await _controller.GetFullRecipe(unknownId);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    // --- GetRecipesSharedWithMe ---
+
+    [Fact]
+    public async Task GetRecipesSharedWithMe_HasSharedRecipes_Returns200WithList()
+    {
+        var shared = new List<RecipeSummaryResponse> { MakeSummary() };
+        _recipeService.Setup(s => s.GetRecipesSharedWithMeAsync(UserId))
+            .ReturnsAsync(Result<IEnumerable<RecipeSummaryResponse>>.Success(shared));
+
+        var result = await _controller.GetRecipesSharedWithMe();
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var value = Assert.IsAssignableFrom<IEnumerable<RecipeSummaryResponse>>(ok.Value);
+        Assert.Single(value);
+    }
+
+    [Fact]
+    public async Task GetRecipesSharedWithMe_NoneShared_Returns404()
+    {
+        _recipeService.Setup(s => s.GetRecipesSharedWithMeAsync(UserId))
+            .ReturnsAsync(Result<IEnumerable<RecipeSummaryResponse>>.Failure(RecipeErrors.NotFound));
+
+        var result = await _controller.GetRecipesSharedWithMe();
 
         Assert.IsType<NotFoundObjectResult>(result);
     }
@@ -118,25 +150,25 @@ public class RecipesControllerTests
     [Fact]
     public async Task Create_ValidRecipe_Returns200WithSummary()
     {
-        var createDto = new RecipeCreateDto("Pasta Carbonara", null, null, null, null, null, null, null, 1);
-        _recipeService.Setup(s => s.CreateRecipeAsync(UserId, createDto))
-            .ReturnsAsync(Result<RecipeSummaryDto>.Success(MakeSummary(1)));
+        var request = new CreateRecipeRequest("Pasta Carbonara", null, null, null, null, null, null, null, UserId);
+        _recipeService.Setup(s => s.CreateRecipeAsync(UserId, request))
+            .ReturnsAsync(Result<RecipeSummaryResponse>.Success(MakeSummary()));
 
-        var result = await _controller.Create(createDto);
+        var result = await _controller.Create(request);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsType<RecipeSummaryDto>(ok.Value);
+        var value = Assert.IsType<RecipeSummaryResponse>(ok.Value);
         Assert.Equal("Pasta Carbonara", value.Name);
     }
 
     [Fact]
     public async Task Create_ServiceFailure_Returns500()
     {
-        var createDto = new RecipeCreateDto("", null, null, null, null, null, null, null, 1);
-        _recipeService.Setup(s => s.CreateRecipeAsync(UserId, createDto))
-            .ReturnsAsync(Result<RecipeSummaryDto>.Failure(RecipeErrors.UnableToCreate));
+        var request = new CreateRecipeRequest("", null, null, null, null, null, null, null, UserId);
+        _recipeService.Setup(s => s.CreateRecipeAsync(UserId, request))
+            .ReturnsAsync(Result<RecipeSummaryResponse>.Failure(RecipeErrors.UnableToCreate));
 
-        var result = await _controller.Create(createDto);
+        var result = await _controller.Create(request);
 
         var statusResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(500, statusResult.StatusCode);
@@ -147,23 +179,25 @@ public class RecipesControllerTests
     [Fact]
     public async Task Clone_ValidRecipeId_Returns200WithClonedSummary()
     {
-        _recipeService.Setup(s => s.CloneRecipeAsync(UserId, 1))
-            .ReturnsAsync(Result<RecipeSummaryDto>.Success(MakeSummary(2)));
+        var cloneId = Guid.NewGuid();
+        _recipeService.Setup(s => s.CloneRecipeAsync(UserId, RecipeId))
+            .ReturnsAsync(Result<RecipeSummaryResponse>.Success(MakeSummary(cloneId)));
 
-        var result = await _controller.Clone(1);
+        var result = await _controller.Clone(RecipeId);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsType<RecipeSummaryDto>(ok.Value);
-        Assert.Equal(2, value.Id);
+        var value = Assert.IsType<RecipeSummaryResponse>(ok.Value);
+        Assert.Equal(cloneId, value.Id);
     }
 
     [Fact]
     public async Task Clone_RecipeNotFound_Returns404()
     {
-        _recipeService.Setup(s => s.CloneRecipeAsync(UserId, 999))
-            .ReturnsAsync(Result<RecipeSummaryDto>.Failure(RecipeErrors.NotFound));
+        var unknownId = Guid.NewGuid();
+        _recipeService.Setup(s => s.CloneRecipeAsync(UserId, unknownId))
+            .ReturnsAsync(Result<RecipeSummaryResponse>.Failure(RecipeErrors.NotFound));
 
-        var result = await _controller.Clone(999);
+        var result = await _controller.Clone(unknownId);
 
         Assert.IsType<NotFoundObjectResult>(result);
     }
@@ -173,25 +207,26 @@ public class RecipesControllerTests
     [Fact]
     public async Task Update_ExistingRecipe_Returns200WithSummary()
     {
-        var updateDto = new RecipeUpdateDto(1, "Updated Pasta", null, null, null, null, null, null, null, null);
-        _recipeService.Setup(s => s.UpdateRecipeAsync(UserId, 1, updateDto))
-            .ReturnsAsync(Result<RecipeSummaryDto>.Success(MakeSummary(1)));
+        var request = new UpdateRecipeRequest(RecipeId, "Updated Pasta", null, null, null, null, null, null, null, UserId);
+        _recipeService.Setup(s => s.UpdateRecipeAsync(UserId, RecipeId, request))
+            .ReturnsAsync(Result<RecipeSummaryResponse>.Success(MakeSummary()));
 
-        var result = await _controller.Update(1, updateDto);
+        var result = await _controller.Update(RecipeId, request);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsType<RecipeSummaryDto>(ok.Value);
-        Assert.Equal(1, value.Id);
+        var value = Assert.IsType<RecipeSummaryResponse>(ok.Value);
+        Assert.Equal(RecipeId, value.Id);
     }
 
     [Fact]
     public async Task Update_NonExistentRecipe_Returns500()
     {
-        var updateDto = new RecipeUpdateDto(999, "Updated Pasta", null, null, null, null, null, null, null, null);
-        _recipeService.Setup(s => s.UpdateRecipeAsync(UserId, 999, updateDto))
-            .ReturnsAsync(Result<RecipeSummaryDto>.Failure(RecipeErrors.UnableToUpdate));
+        var unknownId = Guid.NewGuid();
+        var request = new UpdateRecipeRequest(unknownId, "Updated Pasta", null, null, null, null, null, null, null, UserId);
+        _recipeService.Setup(s => s.UpdateRecipeAsync(UserId, unknownId, request))
+            .ReturnsAsync(Result<RecipeSummaryResponse>.Failure(RecipeErrors.UnableToUpdate));
 
-        var result = await _controller.Update(999, updateDto);
+        var result = await _controller.Update(unknownId, request);
 
         var statusResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(500, statusResult.StatusCode);
@@ -202,10 +237,10 @@ public class RecipesControllerTests
     [Fact]
     public async Task Delete_ExistingRecipe_Returns200()
     {
-        _recipeService.Setup(s => s.DeleteRecipeAsync(UserId, 1))
+        _recipeService.Setup(s => s.DeleteRecipeAsync(UserId, RecipeId))
             .ReturnsAsync(Result<bool>.Success(true));
 
-        var result = await _controller.Delete(1);
+        var result = await _controller.Delete(RecipeId);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         Assert.Equal(true, ok.Value);
@@ -214,10 +249,11 @@ public class RecipesControllerTests
     [Fact]
     public async Task Delete_NonExistentRecipe_Returns500()
     {
-        _recipeService.Setup(s => s.DeleteRecipeAsync(UserId, 999))
+        var unknownId = Guid.NewGuid();
+        _recipeService.Setup(s => s.DeleteRecipeAsync(UserId, unknownId))
             .ReturnsAsync(Result<bool>.Failure(RecipeErrors.UnableToDelete));
 
-        var result = await _controller.Delete(999);
+        var result = await _controller.Delete(unknownId);
 
         var statusResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(500, statusResult.StatusCode);
@@ -228,24 +264,25 @@ public class RecipesControllerTests
     [Fact]
     public async Task GetIngredients_ValidRecipeId_Returns200WithIngredients()
     {
-        var ingredients = new List<RecipeIngredientSummaryDto> { MakeIngredientSummary(1, 1), MakeIngredientSummary(2, 1) };
-        _recipeService.Setup(s => s.GetIngredientsByRecipeIdAsync(UserId, 1))
-            .ReturnsAsync(Result<IEnumerable<RecipeIngredientSummaryDto>>.Success(ingredients));
+        var ingredients = new List<RecipeIngredientSummaryResponse> { MakeIngredient(), MakeIngredient(Guid.NewGuid()) };
+        _recipeService.Setup(s => s.GetIngredientsByRecipeIdAsync(UserId, RecipeId))
+            .ReturnsAsync(Result<IEnumerable<RecipeIngredientSummaryResponse>>.Success(ingredients));
 
-        var result = await _controller.GetIngredients(1);
+        var result = await _controller.GetIngredients(RecipeId);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsAssignableFrom<IEnumerable<RecipeIngredientSummaryDto>>(ok.Value);
+        var value = Assert.IsAssignableFrom<IEnumerable<RecipeIngredientSummaryResponse>>(ok.Value);
         Assert.Equal(2, value.Count());
     }
 
     [Fact]
     public async Task GetIngredients_NonExistentRecipe_Returns404()
     {
-        _recipeService.Setup(s => s.GetIngredientsByRecipeIdAsync(UserId, 999))
-            .ReturnsAsync(Result<IEnumerable<RecipeIngredientSummaryDto>>.Failure(RecipeErrors.NotFound));
+        var unknownId = Guid.NewGuid();
+        _recipeService.Setup(s => s.GetIngredientsByRecipeIdAsync(UserId, unknownId))
+            .ReturnsAsync(Result<IEnumerable<RecipeIngredientSummaryResponse>>.Failure(RecipeErrors.NotFound));
 
-        var result = await _controller.GetIngredients(999);
+        var result = await _controller.GetIngredients(unknownId);
 
         Assert.IsType<NotFoundObjectResult>(result);
     }
@@ -255,25 +292,25 @@ public class RecipesControllerTests
     [Fact]
     public async Task AddIngredient_ValidIngredient_Returns200WithIngredient()
     {
-        var ingredientDto = new RecipeIngredientCreateDto("Bacon", 200m, "grams", null);
-        _recipeService.Setup(s => s.AddIngredientToRecipeAsync(UserId, 1, ingredientDto))
-            .ReturnsAsync(Result<RecipeIngredientSummaryDto>.Success(MakeIngredientSummary(1, 1)));
+        var request = new CreateRecipeIngredientRequest("Bacon", 200m, "grams", null);
+        _recipeService.Setup(s => s.AddIngredientToRecipeAsync(UserId, RecipeId, request))
+            .ReturnsAsync(Result<RecipeIngredientSummaryResponse>.Success(MakeIngredient()));
 
-        var result = await _controller.AddIngredient(1, ingredientDto);
+        var result = await _controller.AddIngredient(RecipeId, request);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsType<RecipeIngredientSummaryDto>(ok.Value);
-        Assert.Equal(1, value.Id);
+        var value = Assert.IsType<RecipeIngredientSummaryResponse>(ok.Value);
+        Assert.Equal(IngredientId, value.Id);
     }
 
     [Fact]
     public async Task AddIngredient_ServiceFailure_Returns500()
     {
-        var ingredientDto = new RecipeIngredientCreateDto("Bacon", 200m, "grams", null);
-        _recipeService.Setup(s => s.AddIngredientToRecipeAsync(UserId, 999, ingredientDto))
-            .ReturnsAsync(Result<RecipeIngredientSummaryDto>.Failure(RecipeIngredientErrors.UnableToCreate));
+        var request = new CreateRecipeIngredientRequest("Bacon", 200m, "grams", null);
+        _recipeService.Setup(s => s.AddIngredientToRecipeAsync(UserId, RecipeId, request))
+            .ReturnsAsync(Result<RecipeIngredientSummaryResponse>.Failure(RecipeIngredientErrors.UnableToCreate));
 
-        var result = await _controller.AddIngredient(999, ingredientDto);
+        var result = await _controller.AddIngredient(RecipeId, request);
 
         var statusResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(500, statusResult.StatusCode);
@@ -284,25 +321,26 @@ public class RecipesControllerTests
     [Fact]
     public async Task UpdateIngredient_ValidIngredient_Returns200WithIngredient()
     {
-        var updateDto = new RecipeIngredientUpdateDto(1, "Bacon", 200m, "grams", null);
-        _recipeService.Setup(s => s.UpdateRecipeIngredientAsync(UserId, 1, 1, updateDto))
-            .ReturnsAsync(Result<RecipeIngredientSummaryDto>.Success(MakeIngredientSummary(1, 1)));
+        var request = new UpdateRecipeIngredientRequest(IngredientId, "Bacon", 200m, "grams", null);
+        _recipeService.Setup(s => s.UpdateRecipeIngredientAsync(UserId, RecipeId, IngredientId, request))
+            .ReturnsAsync(Result<RecipeIngredientSummaryResponse>.Success(MakeIngredient()));
 
-        var result = await _controller.UpdateIngredient(1, 1, updateDto);
+        var result = await _controller.UpdateIngredient(RecipeId, IngredientId, request);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsType<RecipeIngredientSummaryDto>(ok.Value);
-        Assert.Equal(1, value.Id);
+        var value = Assert.IsType<RecipeIngredientSummaryResponse>(ok.Value);
+        Assert.Equal(IngredientId, value.Id);
     }
 
     [Fact]
     public async Task UpdateIngredient_ServiceFailure_Returns500()
     {
-        var updateDto = new RecipeIngredientUpdateDto(999, "Bacon", 200m, "grams", null);
-        _recipeService.Setup(s => s.UpdateRecipeIngredientAsync(UserId, 1, 999, updateDto))
-            .ReturnsAsync(Result<RecipeIngredientSummaryDto>.Failure(RecipeIngredientErrors.UnableToUpdate));
+        var unknownId = Guid.NewGuid();
+        var request = new UpdateRecipeIngredientRequest(unknownId, "Bacon", 200m, "grams", null);
+        _recipeService.Setup(s => s.UpdateRecipeIngredientAsync(UserId, RecipeId, unknownId, request))
+            .ReturnsAsync(Result<RecipeIngredientSummaryResponse>.Failure(RecipeIngredientErrors.UnableToUpdate));
 
-        var result = await _controller.UpdateIngredient(1, 999, updateDto);
+        var result = await _controller.UpdateIngredient(RecipeId, unknownId, request);
 
         var statusResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(500, statusResult.StatusCode);
@@ -313,10 +351,10 @@ public class RecipesControllerTests
     [Fact]
     public async Task DeleteIngredient_ValidIds_Returns200()
     {
-        _recipeService.Setup(s => s.DeleteRecipeIngredientAsync(UserId, 1, 1))
+        _recipeService.Setup(s => s.DeleteRecipeIngredientAsync(UserId, RecipeId, IngredientId))
             .ReturnsAsync(Result<bool>.Success(true));
 
-        var result = await _controller.DeleteIngredient(1, 1);
+        var result = await _controller.DeleteIngredient(RecipeId, IngredientId);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         Assert.Equal(true, ok.Value);
@@ -325,10 +363,10 @@ public class RecipesControllerTests
     [Fact]
     public async Task DeleteIngredient_Unauthorized_Returns401()
     {
-        _recipeService.Setup(s => s.DeleteRecipeIngredientAsync(UserId, 1, 99))
+        _recipeService.Setup(s => s.DeleteRecipeIngredientAsync(UserId, RecipeId, IngredientId))
             .ReturnsAsync(Result<bool>.Failure(RecipeErrors.Unauthorized));
 
-        var result = await _controller.DeleteIngredient(1, 99);
+        var result = await _controller.DeleteIngredient(RecipeId, IngredientId);
 
         Assert.IsType<UnauthorizedObjectResult>(result);
     }
@@ -338,24 +376,25 @@ public class RecipesControllerTests
     [Fact]
     public async Task GetInstructions_ValidRecipeId_Returns200WithInstructions()
     {
-        var instructions = new List<RecipeInstructionDto> { MakeInstruction(1, 1), MakeInstruction(2, 1) };
-        _recipeService.Setup(s => s.GetInstructionsByRecipeIdAsync(UserId, 1))
-            .ReturnsAsync(Result<IEnumerable<RecipeInstructionDto>>.Success(instructions));
+        var instructions = new List<RecipeInstructionResponse> { MakeInstruction(), MakeInstruction(Guid.NewGuid()) };
+        _recipeService.Setup(s => s.GetInstructionsByRecipeIdAsync(UserId, RecipeId))
+            .ReturnsAsync(Result<IEnumerable<RecipeInstructionResponse>>.Success(instructions));
 
-        var result = await _controller.GetInstructions(1);
+        var result = await _controller.GetInstructions(RecipeId);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsAssignableFrom<IEnumerable<RecipeInstructionDto>>(ok.Value);
+        var value = Assert.IsAssignableFrom<IEnumerable<RecipeInstructionResponse>>(ok.Value);
         Assert.Equal(2, value.Count());
     }
 
     [Fact]
     public async Task GetInstructions_NonExistentRecipe_Returns404()
     {
-        _recipeService.Setup(s => s.GetInstructionsByRecipeIdAsync(UserId, 999))
-            .ReturnsAsync(Result<IEnumerable<RecipeInstructionDto>>.Failure(RecipeErrors.NotFound));
+        var unknownId = Guid.NewGuid();
+        _recipeService.Setup(s => s.GetInstructionsByRecipeIdAsync(UserId, unknownId))
+            .ReturnsAsync(Result<IEnumerable<RecipeInstructionResponse>>.Failure(RecipeErrors.NotFound));
 
-        var result = await _controller.GetInstructions(999);
+        var result = await _controller.GetInstructions(unknownId);
 
         Assert.IsType<NotFoundObjectResult>(result);
     }
@@ -365,25 +404,25 @@ public class RecipesControllerTests
     [Fact]
     public async Task AddInstruction_ValidInstruction_Returns200WithInstruction()
     {
-        var instructionDto = new RecipeInstructionCreateDto(1, "Boil pasta", null);
-        _recipeService.Setup(s => s.AddInstructionToRecipeAsync(UserId, 1, instructionDto))
-            .ReturnsAsync(Result<RecipeInstructionDto>.Success(MakeInstruction(1, 1)));
+        var request = new CreateRecipeInstructionRequest(RecipeId, 1, "Boil pasta", null);
+        _recipeService.Setup(s => s.AddInstructionToRecipeAsync(UserId, RecipeId, request))
+            .ReturnsAsync(Result<RecipeInstructionResponse>.Success(MakeInstruction()));
 
-        var result = await _controller.AddInstruction(1, instructionDto);
+        var result = await _controller.AddInstruction(RecipeId, request);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsType<RecipeInstructionDto>(ok.Value);
-        Assert.Equal(1, value.Id);
+        var value = Assert.IsType<RecipeInstructionResponse>(ok.Value);
+        Assert.Equal(InstructionId, value.Id);
     }
 
     [Fact]
     public async Task AddInstruction_ServiceFailure_Returns500()
     {
-        var instructionDto = new RecipeInstructionCreateDto(1, "Boil pasta", null);
-        _recipeService.Setup(s => s.AddInstructionToRecipeAsync(UserId, 999, instructionDto))
-            .ReturnsAsync(Result<RecipeInstructionDto>.Failure(RecipeInstructionErrors.UnableToCreate));
+        var request = new CreateRecipeInstructionRequest(RecipeId, 1, "Boil pasta", null);
+        _recipeService.Setup(s => s.AddInstructionToRecipeAsync(UserId, RecipeId, request))
+            .ReturnsAsync(Result<RecipeInstructionResponse>.Failure(RecipeInstructionErrors.UnableToCreate));
 
-        var result = await _controller.AddInstruction(999, instructionDto);
+        var result = await _controller.AddInstruction(RecipeId, request);
 
         var statusResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(500, statusResult.StatusCode);
@@ -394,25 +433,26 @@ public class RecipesControllerTests
     [Fact]
     public async Task UpdateInstruction_ValidInstruction_Returns200WithInstruction()
     {
-        var updateDto = new RecipeInstructionUpdateDto(1, 1, "Boil pasta", null);
-        _recipeService.Setup(s => s.UpdateRecipeInstructionAsync(UserId, 1, 1, updateDto))
-            .ReturnsAsync(Result<RecipeInstructionDto>.Success(MakeInstruction(1, 1)));
+        var request = new UpdateRecipeInstructionRequest(InstructionId, 1, "Boil pasta", null);
+        _recipeService.Setup(s => s.UpdateRecipeInstructionAsync(UserId, RecipeId, InstructionId, request))
+            .ReturnsAsync(Result<RecipeInstructionResponse>.Success(MakeInstruction()));
 
-        var result = await _controller.UpdateInstruction(1, 1, updateDto);
+        var result = await _controller.UpdateInstruction(RecipeId, InstructionId, request);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsType<RecipeInstructionDto>(ok.Value);
-        Assert.Equal(1, value.Id);
+        var value = Assert.IsType<RecipeInstructionResponse>(ok.Value);
+        Assert.Equal(InstructionId, value.Id);
     }
 
     [Fact]
     public async Task UpdateInstruction_ServiceFailure_Returns500()
     {
-        var updateDto = new RecipeInstructionUpdateDto(999, 1, "Boil pasta", null);
-        _recipeService.Setup(s => s.UpdateRecipeInstructionAsync(UserId, 1, 999, updateDto))
-            .ReturnsAsync(Result<RecipeInstructionDto>.Failure(RecipeInstructionErrors.UnableToUpdate));
+        var unknownId = Guid.NewGuid();
+        var request = new UpdateRecipeInstructionRequest(unknownId, 1, "Boil pasta", null);
+        _recipeService.Setup(s => s.UpdateRecipeInstructionAsync(UserId, RecipeId, unknownId, request))
+            .ReturnsAsync(Result<RecipeInstructionResponse>.Failure(RecipeInstructionErrors.UnableToUpdate));
 
-        var result = await _controller.UpdateInstruction(1, 999, updateDto);
+        var result = await _controller.UpdateInstruction(RecipeId, unknownId, request);
 
         var statusResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(500, statusResult.StatusCode);
@@ -423,10 +463,10 @@ public class RecipesControllerTests
     [Fact]
     public async Task DeleteInstruction_ValidIds_Returns200()
     {
-        _recipeService.Setup(s => s.DeleteRecipeInstructionAsync(UserId, 1, 1))
+        _recipeService.Setup(s => s.DeleteRecipeInstructionAsync(UserId, RecipeId, InstructionId))
             .ReturnsAsync(Result<bool>.Success(true));
 
-        var result = await _controller.DeleteInstruction(1, 1);
+        var result = await _controller.DeleteInstruction(RecipeId, InstructionId);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         Assert.Equal(true, ok.Value);
@@ -435,10 +475,10 @@ public class RecipesControllerTests
     [Fact]
     public async Task DeleteInstruction_Unauthorized_Returns401()
     {
-        _recipeService.Setup(s => s.DeleteRecipeInstructionAsync(UserId, 1, 99))
+        _recipeService.Setup(s => s.DeleteRecipeInstructionAsync(UserId, RecipeId, InstructionId))
             .ReturnsAsync(Result<bool>.Failure(RecipeErrors.Unauthorized));
 
-        var result = await _controller.DeleteInstruction(1, 99);
+        var result = await _controller.DeleteInstruction(RecipeId, InstructionId);
 
         Assert.IsType<UnauthorizedObjectResult>(result);
     }
@@ -446,28 +486,28 @@ public class RecipesControllerTests
     // --- ShareRecipe ---
 
     [Fact]
-    public async Task ShareRecipe_ValidRequest_Returns200WithPermission()
+    public async Task ShareRecipe_ValidRequest_Returns200WithResponse()
     {
-        var request = new ShareRequestDto(SubjectType.User, 2, Permission.View, null);
-        _recipeService.Setup(s => s.ShareRecipeAsync(UserId, 1, request))
-            .ReturnsAsync(Result<ResourcePermissionDto>.Success(MakePermission(1)));
+        var request = new ShareRecipeRequest(RecipeId, "user", SubjectId, "view", UserId, null);
+        _recipeService.Setup(s => s.ShareRecipeAsync(request))
+            .ReturnsAsync(Result<ShareRecipeResponse>.Success(MakeShareResponse()));
 
-        var result = await _controller.ShareRecipe(1, request);
+        var result = await _controller.ShareRecipe(RecipeId, request);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsType<ResourcePermissionDto>(ok.Value);
-        Assert.Equal(ResourceType.Recipe, value.ResourceType);
-        Assert.Equal(2, value.SubjectId);
+        var value = Assert.IsType<ShareRecipeResponse>(ok.Value);
+        Assert.Equal("recipe", value.ResourceTypeName);
+        Assert.Equal(SubjectId, value.SubjectId);
     }
 
     [Fact]
     public async Task ShareRecipe_NotOwner_Returns401()
     {
-        var request = new ShareRequestDto(SubjectType.User, 2, Permission.View, null);
-        _recipeService.Setup(s => s.ShareRecipeAsync(UserId, 1, request))
-            .ReturnsAsync(Result<ResourcePermissionDto>.Failure(RecipeErrors.Unauthorized));
+        var request = new ShareRecipeRequest(RecipeId, "user", SubjectId, "view", UserId, null);
+        _recipeService.Setup(s => s.ShareRecipeAsync(request))
+            .ReturnsAsync(Result<ShareRecipeResponse>.Failure(RecipeErrors.Unauthorized));
 
-        var result = await _controller.ShareRecipe(1, request);
+        var result = await _controller.ShareRecipe(RecipeId, request);
 
         Assert.IsType<UnauthorizedObjectResult>(result);
     }
@@ -475,11 +515,11 @@ public class RecipesControllerTests
     [Fact]
     public async Task ShareRecipe_RecipeNotFound_Returns404()
     {
-        var request = new ShareRequestDto(SubjectType.User, 2, Permission.View, null);
-        _recipeService.Setup(s => s.ShareRecipeAsync(UserId, 999, request))
-            .ReturnsAsync(Result<ResourcePermissionDto>.Failure(RecipeErrors.NotFound));
+        var request = new ShareRecipeRequest(RecipeId, "user", SubjectId, "view", UserId, null);
+        _recipeService.Setup(s => s.ShareRecipeAsync(request))
+            .ReturnsAsync(Result<ShareRecipeResponse>.Failure(RecipeErrors.NotFound));
 
-        var result = await _controller.ShareRecipe(999, request);
+        var result = await _controller.ShareRecipe(RecipeId, request);
 
         Assert.IsType<NotFoundObjectResult>(result);
     }

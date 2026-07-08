@@ -6,37 +6,37 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "mealplanner", "mealplanner"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "shared", "shared", "{CC59F1DC-7008-82D1-1AC5-E73DF7F77FAE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.Models", "mealplanner\shared\Shared.Models\Shared.Models.csproj", "{35FE60DE-C996-C3A7-9DBB-E8CE1B990A74}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.Models", " shared\Shared.Models\Shared.Models.csproj", "{35FE60DE-C996-C3A7-9DBB-E8CE1B990A74}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.Services", "mealplanner\shared\Shared.Services\Shared.Services.csproj", "{D27EE0CE-0321-13CC-B4E7-178F63F7050D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.Services", "shared\Shared.Services\Shared.Services.csproj", "{D27EE0CE-0321-13CC-B4E7-178F63F7050D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.Tests", "mealplanner\shared\Shared.Tests\Shared.Tests.csproj", "{18739B2E-59AD-3D06-BBF1-ED8C4D283769}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.Tests", "shared\Shared.Tests\Shared.Tests.csproj", "{18739B2E-59AD-3D06-BBF1-ED8C4D283769}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "services", "services", "{CEA20124-1E82-AD65-6494-4FCDD29F1A18}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "IdentityService", "IdentityService", "{4680FA04-B3C6-3DA8-7EE8-F20912C21308}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "src", "mealplanner\services\IdentityService\src\IdentityService.csproj", "{44F78D54-18FC-AE09-F859-4D64FF4E1310}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "src", "services\IdentityService\src\IdentityService.csproj", "{44F78D54-18FC-AE09-F859-4D64FF4E1310}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IdentityService.Tests", "mealplanner\services\IdentityService\tests\IdentityService.Tests\IdentityService.Tests.csproj", "{AAAAAAAA-0001-0001-0001-000000000001}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IdentityService.Tests", "services\IdentityService\tests\IdentityService.Tests\IdentityService.Tests.csproj", "{AAAAAAAA-0001-0001-0001-000000000001}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "MealRecipeService", "MealRecipeService", "{334A5D25-9DE2-CD55-A2F9-D44E9F71F554}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "src", "mealplanner\services\MealRecipeService\src\MealRecipeService.csproj", "{80A7BFC2-FB28-7DEB-AB99-094646B1414F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "src", "services\MealRecipeService\src\MealRecipeService.csproj", "{80A7BFC2-FB28-7DEB-AB99-094646B1414F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MealRecipeService.Tests", "mealplanner\services\MealRecipeService\tests\MealRecipeService.Tests\MealRecipeService.Tests.csproj", "{BBBBBBBB-0002-0002-0002-000000000002}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MealRecipeService.Tests", "services\MealRecipeService\tests\MealRecipeService.Tests\MealRecipeService.Tests.csproj", "{BBBBBBBB-0002-0002-0002-000000000002}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ApiGateway", "ApiGateway", "{74714A78-7AEE-5056-4028-AFDFDC21AEF5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "src", "mealplanner\services\ApiGateway\src\ApiGateway.csproj", "{FECF01E8-D29A-C530-57C2-B4A1574A1650}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "src", "services\ApiGateway\src\ApiGateway.csproj", "{FECF01E8-D29A-C530-57C2-B4A1574A1650}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiGateway.Tests", "mealplanner\services\ApiGateway\tests\ApiGateway.Tests\ApiGateway.Tests.csproj", "{CCCCCCCC-0003-0003-0003-000000000003}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiGateway.Tests", "services\ApiGateway\tests\ApiGateway.Tests\ApiGateway.Tests.csproj", "{CCCCCCCC-0003-0003-0003-000000000003}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PlanService", "PlanService", "{89060B9A-3913-8350-9C75-57C114CC4992}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "src", "mealplanner\services\PlanService\src\PlanService.csproj", "{DECD24F4-8A2C-F12A-99AC-1962FB3666FF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "src", "services\PlanService\src\PlanService.csproj", "{DECD24F4-8A2C-F12A-99AC-1962FB3666FF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlanService.Tests", "mealplanner\services\PlanService\tests\PlanService.Tests\PlanService.Tests.csproj", "{DDDDDDDD-0004-0004-0004-000000000004}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlanService.Tests", "services\PlanService\tests\PlanService.Tests\PlanService.Tests.csproj", "{DDDDDDDD-0004-0004-0004-000000000004}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

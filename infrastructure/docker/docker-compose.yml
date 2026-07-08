@@ -93,6 +93,7 @@ services:
       context: ../..
       dockerfile: services/MealRecipeService/src/Dockerfile
     depends_on:
+      rabbitmq:
       meal-recipe-db:
         condition: service_healthy
     environment:
@@ -108,40 +109,51 @@ services:
       timeout: 5s
       retries: 5
 
-  # plan-service:
-  #   build:
-  #     context: ../..
-  #     dockerfile: services/PlanService/src/Dockerfile
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #   environment:
-  #     - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=mealplannerdb;Username=mealplanner_user;Password=mealPlanner26!
-  #     - ASPNETCORE_URLS=http://+:80
-  #     - ASPNETCORE_ENVIRONMENT=Development
-  #     - ServiceApiKey=internal-service-key-replace-in-production
-  #   ports:
-  #     - "5004:80"
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost/health"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
+  plan-service:
+    build:
+      context: ../..
+      dockerfile: services/PlanService/src/Dockerfile
+    depends_on:
+      rabbitmq:
+      plan_db:
+        condition: service_healthy
+    environment:
+      - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=mealplannerdb;Username=mealplanner_user;Password=mealPlanner26!
+      - ASPNETCORE_URLS=http://+:80
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ServiceApiKey=internal-service-key-replace-in-production
+    ports:
+      - "5004:80"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # frontend:
-  #   build:
-  #     context: ../../frontend
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "3000:80"
-  #   depends_on:
-  #     auth-service:
-  #       condition: service_healthy
-  #     meal-service:
-  #       condition: service_healthy
-  #     plan-service:
-  #       condition: service_healthy
-  #   restart: unless-stopped
+  rabbitmq:
+  image: rabbitmq:3-management
+  ports:
+    - "5672:5672"
+    - "15672:15672"
+  environment:
+    RABBITMQ_DEFAULT_USER: mealplanner
+    RABBITMQ_DEFAULT_PASS: mealplanner
+  volumes:
+    - rabbitmq_data:/var/lib/rabbitmq
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      meal-service:
+        condition: service_healthy
+      plan-service:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   # mealplanningdb_data:
@@ -152,3 +164,4 @@ volumes:
     external: true
   plandb_data:  
     external: true
+  rabbitmq_data:

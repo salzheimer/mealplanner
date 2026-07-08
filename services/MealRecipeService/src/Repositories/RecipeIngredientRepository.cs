@@ -11,12 +11,12 @@ public class RecipeIngredientRepository : Interfaces.IRecipeIngredientRepository
     {
         _context = context;
     }
-    public async Task<RecipeIngredient?> GetByIdAsync(int id)
+    public async Task<RecipeIngredient?> GetByIdAsync(Guid id)
     {
         return await _context.RecipeIngredients.FindAsync(id);
     }
 
-    public async Task<IEnumerable<RecipeIngredient>> GetByRecipeIdAsync(int recipeId)
+    public async Task<IEnumerable<RecipeIngredient>> GetByRecipeIdAsync(Guid recipeId)
     {
         return await _context.RecipeIngredients.Where(i => i.RecipeId == recipeId).ToListAsync();
     }
@@ -33,7 +33,7 @@ public class RecipeIngredientRepository : Interfaces.IRecipeIngredientRepository
         var result = await _context.SaveChangesAsync();
         return result > 0;
     }
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(Guid id)
     {
         var ingredient = await _context.RecipeIngredients.FindAsync(id);
         if (ingredient == null)

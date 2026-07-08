@@ -1,7 +1,7 @@
 using Shared.Models;
 using Scalar.AspNetCore;
 using Microsoft.EntityFrameworkCore;
-using MealRecipeService.Clients;
+ 
 using MealRecipeService.Repositories;
 using MealRecipeService.Services;
 using MealRecipeService.Interfaces;
@@ -66,9 +66,10 @@ builder.Services.AddScoped<IPermissionTypeRepository,PermissionTypeRepository>()
 // Services
 builder.Services.AddScoped<IRecipeService, RecipeService>();
 builder.Services.AddScoped<IMealService, MealService>();
+builder.Services.AddScoped<IAccessService,AccessService>();
 // HTTP clients
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<IIdentityServiceClient, IdentityServiceClient>();
+ 
 
 //Database
 var conn = builder.Configuration.GetConnectionString("MealRecipe");

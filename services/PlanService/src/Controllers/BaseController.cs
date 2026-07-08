@@ -8,10 +8,10 @@ namespace PlanService.Controllers;
 
 public class BaseController : ControllerBase
 {
-     internal int? GetAuthenticatedUserId()
+     internal Guid? GetAuthenticatedUserId()
     {
         var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return int.TryParse(claim, out var id) ? id : null;
+        return Guid.TryParse(claim, out var id) ? id : null;
     }
     protected IActionResult HandleResult<T>(Result<T> result)
     {

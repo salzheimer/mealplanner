@@ -6,17 +6,17 @@ namespace PlanService.Repositories;
 
 public class PlanRepository : IPlanRepository
 {
-    private readonly PlanContext _context;
+    private readonly PlanDbContext _context;
 
-    public PlanRepository(PlanContext context)
+    public PlanRepository(PlanDbContext context)
     {
         _context = context;
     }
 
     
-    public async Task<Plan?> GetPlanByIdAsync(int id)
+    public async Task<Plan?> GetPlanByIdAsync(Guid id)
     {
-        return await _context.Plans.FirstOrDefaultAsync(p => p.Id == id);
+        return await _context.Plans.FirstOrDefaultAsync(p => p.PlanId == id);
     }
     
 
@@ -27,7 +27,7 @@ public class PlanRepository : IPlanRepository
         return result > 0;
     }
 
-    public async Task<bool> DeletePlanAsync(int id)
+    public async Task<bool> DeletePlanAsync(Guid id)
     {
         var plan = await _context.Plans.FindAsync(id);
         if (plan != null)
@@ -48,7 +48,7 @@ public class PlanRepository : IPlanRepository
          return plan;
     }
 
-    public async Task<IEnumerable<Plan>> GetPlansByOwnerAsync(int userId)
+    public async Task<IEnumerable<Plan>> GetPlansByOwnerAsync(Guid userId)
     {
         var plans = await _context.Plans.Where(p => p.OwnerUserId == userId).ToListAsync();
 
@@ -71,8 +71,8 @@ public class PlanRepository : IPlanRepository
         return await _context.Plans.Where(p => p.StartDate >= startDate && p.EndDate <= endDate).ToListAsync();
     }
 
-      public async Task<IEnumerable<Plan>> GetByIdsAsync(HashSet<int> sharedPlanIds)
+      public async Task<IEnumerable<Plan>> GetByIdsAsync(HashSet<Guid> sharedPlanIds)
     {
-        return await _context.Plans.Where(p => sharedPlanIds.Contains(p.Id)).ToListAsync();
+        return await _context.Plans.Where(p => sharedPlanIds.Contains(p.PlanId)).ToListAsync();
     }
 }

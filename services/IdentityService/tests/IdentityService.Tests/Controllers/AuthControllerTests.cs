@@ -83,7 +83,7 @@ public class AuthControllerTests
     public async Task Register_UserAlreadyExists_Returns400()
     {
         _userService.Setup(s => s.FindByEmail("alice@example.com"))
-            .ReturnsAsync(Result<UserResponseDto>.Success(new UserResponseDto(TestUserId, "alice@example.com", "alice")));
+            .ReturnsAsync(Result<UserResponse>.Success(new UserResponse(TestUserId, "alice@example.com", "alice")));
 
         var result = await _controller.Register(new RegisterRequest("alice@example.com", "password123", "alice"));
 
@@ -94,11 +94,11 @@ public class AuthControllerTests
     public async Task Register_ValidNewUser_Returns200WithTokens()
     {
         _userService.Setup(s => s.FindByEmail("alice@example.com"))
-            .ReturnsAsync(Result<UserResponseDto>.Failure(UserErrors.NotFound));
+            .ReturnsAsync(Result<UserResponse>.Failure(UserErrors.NotFound));
         _userService.Setup(s => s.ValidatePassword("password123"))
             .ReturnsAsync(Result<string>.Success(""));
-        _userService.Setup(s => s.CreateUserAsync(It.IsAny<CreateUserDto>()))
-            .ReturnsAsync(Result<UserResponseDto>.Success(new UserResponseDto(TestUserId, "alice@example.com", "")));
+        _userService.Setup(s => s.CreateUserAsync(It.IsAny<CreateUserRequest>()))
+            .ReturnsAsync(Result<UserResponse>.Success(new UserResponse(TestUserId, "alice@example.com", "")));
 
         var result = await _controller.Register(new RegisterRequest("alice@example.com", "password123", null));
 
@@ -124,7 +124,7 @@ public class AuthControllerTests
     {
         _userService.Setup(s => s.ValidateCredentials("alice@example.com", "password123")).ReturnsAsync(true);
         _userService.Setup(s => s.FindByEmail("alice@example.com"))
-            .ReturnsAsync(Result<UserResponseDto>.Success(new UserResponseDto(TestUserId, "alice@example.com", "")));
+            .ReturnsAsync(Result<UserResponse>.Success(new UserResponse(TestUserId, "alice@example.com", "")));
 
         var result = await _controller.Login(new LoginRequest("alice@example.com", "password123"));
 
@@ -150,7 +150,7 @@ public class AuthControllerTests
         _sessionRepository.Setup(s => s.GetByTokenHashAsync(It.IsAny<string>())).ReturnsAsync(session);
         _sessionRepository.Setup(s => s.RevokeAsync(sessionId)).ReturnsAsync(true);
         _userService.Setup(s => s.FindById(TestUserId))
-            .ReturnsAsync(Result<UserResponseDto>.Success(new UserResponseDto(TestUserId, "alice@example.com", "")));
+            .ReturnsAsync(Result<UserResponse>.Success(new UserResponse(TestUserId, "alice@example.com", "")));
 
         var result = await _controller.Refresh(new RefreshRequest("valid-refresh-token"));
 

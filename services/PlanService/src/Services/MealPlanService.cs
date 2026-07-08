@@ -1,6 +1,5 @@
 using PlanService.Interfaces;
-using PlanService.Clients;
-using PlanService.Mappings;
+
 using PlanService.Models;
 using Shared.Models;
 
@@ -11,28 +10,33 @@ public class MealPlanService : IMealPlanService
     private readonly IMealPlanRepository _mealPlanRepository;
     private readonly IMealItemPlanRepository _mealItemPlanRepository;
     private readonly IPlanRepository _planRepository;
-    private readonly IIdentityServiceClient _identityClient;
+    private readonly IAccessService _accessService;
+    private readonly IPlanMealItemStatusTypeRepository _planMealItemStatusTypeRepository;
 
     public MealPlanService(
         IMealPlanRepository mealPlanRepository,
         IMealItemPlanRepository mealItemPlanRepository,
         IPlanRepository planRepository,
-        IIdentityServiceClient identityClient)
+        IAccessService accessService,
+        IPlanMealItemStatusTypeRepository planMealItemStatusTypeRepository
+         )
     {
         _mealPlanRepository = mealPlanRepository;
         _mealItemPlanRepository = mealItemPlanRepository;
         _planRepository = planRepository;
-        _identityClient = identityClient;
+        _accessService = accessService;
+        _planMealItemStatusTypeRepository = planMealItemStatusTypeRepository;
+
     }
 
     #region MealPlan management
 
-    public async Task<Result<MealPlanDto?>> CreateMealPlanAsync(int userId, MealPlanCreateDto mealPlan)
+    public async Task<Result<PlanMealResponse?>> CreateMealPlanAsync(Guid userId, CreatePlanMealRequest mealPlan)
     {
         if (!await UserHasEditAccessToPlan(userId, mealPlan.PlanId))
-            return Result<MealPlanDto?>.Failure(MealPlanErrors.Unauthorized);
+            return Result<PlanMealResponse?>.Failure(MealPlanErrors.Unauthorized);
 
-        var plan = new MealPlan
+        var plan = new PlanMeal
         {
             MealId = mealPlan.MealId,
             PlanId = mealPlan.PlanId,
@@ -42,29 +46,29 @@ public class MealPlanService : IMealPlanService
         };
         var createdPlan = await _mealPlanRepository.CreateMealPlanAsync(plan);
         if (createdPlan == null)
-            return Result<MealPlanDto?>.Failure(MealPlanErrors.UnableToCreate);
+            return Result<PlanMealResponse?>.Failure(MealPlanErrors.UnableToCreate);
 
-        return Result<MealPlanDto?>.Success(ToDto(createdPlan));
+        return Result<PlanMealResponse?>.Success(ToDto(createdPlan));
     }
 
-    public async Task<Result<MealPlanDto?>> GetMealPlanByIdAsync(int userId, int id)
+    public async Task<Result<PlanMealResponse?>> GetMealPlanByIdAsync(Guid userId, Guid planMealId)
     {
-        var plan = await _mealPlanRepository.GetMealPlanByIdAsync(id);
+        var plan = await _mealPlanRepository.GetMealPlanByIdAsync(planMealId);
         if (plan == null)
-            return Result<MealPlanDto?>.Failure(MealPlanErrors.MealPlanNotFound);
+            return Result<PlanMealResponse?>.Failure(MealPlanErrors.MealPlanNotFound);
         if (!await UserHasAccessToPlan(userId, plan.PlanId))
-            return Result<MealPlanDto?>.Failure(MealPlanErrors.Unauthorized);
+            return Result<PlanMealResponse?>.Failure(MealPlanErrors.Unauthorized);
 
-        return Result<MealPlanDto?>.Success(ToDto(plan));
+        return Result<PlanMealResponse?>.Success(ToDto(plan));
     }
 
-    public async Task<Result<MealPlanDto>> UpdateMealPlanAsync(int userId, MealPlanUpdateDto mealPlan)
+    public async Task<Result<PlanMealResponse>> UpdateMealPlanAsync(Guid userId, UpdatePlanMealRequest mealPlan)
     {
         var existingPlan = await _mealPlanRepository.GetMealPlanByIdAsync(mealPlan.Id);
         if (existingPlan == null)
-            return Result<MealPlanDto>.Failure(MealPlanErrors.MealPlanNotFound);
+            return Result<PlanMealResponse>.Failure(MealPlanErrors.MealPlanNotFound);
         if (!await UserHasEditAccessToPlan(userId, existingPlan.PlanId))
-            return Result<MealPlanDto>.Failure(MealPlanErrors.Unauthorized);
+            return Result<PlanMealResponse>.Failure(MealPlanErrors.Unauthorized);
 
         existingPlan.MealId = mealPlan.MealId;
         existingPlan.ServeDate = mealPlan.ServeDate;
@@ -72,12 +76,12 @@ public class MealPlanService : IMealPlanService
 
         var success = await _mealPlanRepository.UpdateMealPlanAsync(existingPlan);
         if (!success)
-            return Result<MealPlanDto>.Failure(MealPlanErrors.UnableToUpdate);
+            return Result<PlanMealResponse>.Failure(MealPlanErrors.UnableToUpdate);
 
-        return Result<MealPlanDto>.Success(ToDto(existingPlan));
+        return Result<PlanMealResponse>.Success(ToDto(existingPlan));
     }
 
-    public async Task<Result<bool>> DeleteMealPlanAsync(int userId, int id)
+    public async Task<Result<bool>> DeleteMealPlanAsync(Guid userId, Guid id)
     {
         var existingPlan = await _mealPlanRepository.GetMealPlanByIdAsync(id);
         if (existingPlan == null)
@@ -92,98 +96,119 @@ public class MealPlanService : IMealPlanService
         return Result<bool>.Success(true);
     }
 
-    public async Task<Result<IEnumerable<MealPlanDto>>> GetMealPlansForUserAsync(int userId)
+    public async Task<Result<IEnumerable<PlanMealResponse>>> GetMealPlansForUserAsync(Guid userId)
     {
         var plans = await _mealPlanRepository.GetMealPlansForUserAsync(userId);
-        return Result<IEnumerable<MealPlanDto>>.Success(plans.Select(ToDto).ToList());
+        return Result<IEnumerable<PlanMealResponse>>.Success(plans.Select(ToDto).ToList());
     }
 
-    public async Task<Result<IEnumerable<MealPlanDto>>> GetMealPlansByStartDateAsync(int userId, DateTime startDate)
+    public async Task<Result<IEnumerable<PlanMealResponse>>> GetMealPlansByStartDateAsync(Guid userId, DateTime startDate)
     {
         var plans = await _mealPlanRepository.GetMealPlansByStartDateAsync(startDate);
-        return Result<IEnumerable<MealPlanDto>>.Success(await FilterToUserMealPlans(userId, plans));
+        return Result<IEnumerable<PlanMealResponse>>.Success(await FilterToUserMealPlans(userId, plans));
     }
 
-    public async Task<Result<IEnumerable<MealPlanDto>>> GetMealPlansByEndDateAsync(int userId, DateTime endDate)
+    public async Task<Result<IEnumerable<PlanMealResponse>>> GetMealPlansByEndDateAsync(Guid userId, DateTime endDate)
     {
         var plans = await _mealPlanRepository.GetMealPlansByEndDateAsync(endDate);
-        return Result<IEnumerable<MealPlanDto>>.Success(await FilterToUserMealPlans(userId, plans));
+        return Result<IEnumerable<PlanMealResponse>>.Success(await FilterToUserMealPlans(userId, plans));
     }
 
-    public async Task<Result<IEnumerable<MealPlanDto>>> GetMealPlansByDateRangeAsync(int userId, DateTime startDate, DateTime endDate)
+    public async Task<Result<IEnumerable<PlanMealResponse>>> GetMealPlansByDateRangeAsync(Guid userId, DateTime startDate, DateTime endDate)
     {
         var plans = await _mealPlanRepository.GetMealPlansByDateRangeAsync(startDate, endDate);
-        return Result<IEnumerable<MealPlanDto>>.Success(await FilterToUserMealPlans(userId, plans));
+        return Result<IEnumerable<PlanMealResponse>>.Success(await FilterToUserMealPlans(userId, plans));
     }
 
     #endregion
 
     #region MealItemPlan management
 
-    public async Task<Result<MealItemPlanDto?>> AddMealItemToPlanAsync(int userId, int mealPlanId, MealItemPlanCreateDto mealItemPlan)
+    public async Task<Result<PlanMealItemResponse?>> AddMealItemToPlanAsync(Guid userId, Guid mealPlanId, CreatePlanMealItemRequest mealItemPlan)
     {
         var mealPlan = await _mealPlanRepository.GetMealPlanByIdAsync(mealPlanId);
         if (mealPlan == null)
-            return Result<MealItemPlanDto?>.Failure(MealPlanErrors.MealPlanNotFound);
+            return Result<PlanMealItemResponse?>.Failure(MealPlanErrors.MealPlanNotFound);
         if (!await UserHasEditAccessToPlan(userId, mealPlan.PlanId))
-            return Result<MealItemPlanDto?>.Failure(MealPlanErrors.Unauthorized);
+            return Result<PlanMealItemResponse?>.Failure(MealPlanErrors.Unauthorized);
 
-        var mealItemPlanEntity = new MealItemPlan
+        var mealItemPlanEntity = new PlanMealItem
         {
             MealPlanId = mealPlanId,
             MealItemId = mealItemPlan.MealItemId,
             AssignedToGuestName = mealItemPlan.AssignedToGuestName,
             AssignedToUserId = mealItemPlan.AssignedToUser,
-            Status = EnumMappings.ToEntityItemStatus(mealItemPlan.Status ?? Shared.Models.ItemStatus.Pending),
+            
             Notes = mealItemPlan.Notes?.ToString() ?? string.Empty
         };
-
+        if (mealItemPlan.StatusTypeId.HasValue)
+        {
+            mealItemPlanEntity.StatusId = mealItemPlan.StatusTypeId.Value;
+        }
+        else
+        {
+            var itemStatus = await GetMealItemPlanStatusType(mealItemPlan.StatusTypeName);
+            if (!itemStatus.IsSuccess)
+                return Result<PlanMealItemResponse?>.Failure(MealItemStatusErrors.MealItemStatusNotFound);
+            mealItemPlanEntity.StatusId = itemStatus.Value!.Id;
+        }
+        
         var created = await _mealItemPlanRepository.AddMealItemToMealPlanAsync(mealItemPlanEntity);
         if (created == null)
-            return Result<MealItemPlanDto?>.Failure(MealPlanErrors.UnableToCreate);
+            return Result<PlanMealItemResponse?>.Failure(MealPlanErrors.UnableToCreate);
 
-        return Result<MealItemPlanDto?>.Success(ToItemDto(created));
+        return Result<PlanMealItemResponse?>.Success(ToItemDto(created));
     }
 
-    public async Task<Result<IEnumerable<MealItemPlanDto>>> GetMealItemsForMealPlanAsync(int userId, int mealPlanId)
+    public async Task<Result<IEnumerable<PlanMealItemResponse>>> GetMealItemsForMealPlanAsync(Guid userId, Guid mealPlanId)
     {
         var mealPlan = await _mealPlanRepository.GetMealPlanByIdAsync(mealPlanId);
         if (mealPlan == null)
-            return Result<IEnumerable<MealItemPlanDto>>.Failure(MealPlanErrors.MealPlanNotFound);
+            return Result<IEnumerable<PlanMealItemResponse>>.Failure(MealPlanErrors.MealPlanNotFound);
         if (!await UserHasAccessToPlan(userId, mealPlan.PlanId))
-            return Result<IEnumerable<MealItemPlanDto>>.Failure(MealPlanErrors.Unauthorized);
+            return Result<IEnumerable<PlanMealItemResponse>>.Failure(MealPlanErrors.Unauthorized);
 
         var items = await _mealItemPlanRepository.GetMealItemsForMealPlanAsync(mealPlanId);
-        return Result<IEnumerable<MealItemPlanDto>>.Success(items.Select(ToItemDto).ToList());
+        return Result<IEnumerable<PlanMealItemResponse>>.Success(items.Select(ToItemDto).ToList());
     }
 
-    public async Task<Result<MealItemPlanDto>> UpdateMealItemInPlanAsync(int userId, int mealPlanId, int mealItemId, MealItemPlanUpdateDto mealItemPlan)
+    public async Task<Result<PlanMealItemResponse>> UpdateMealItemInPlanAsync(Guid userId, Guid mealPlanId, Guid mealItemId, UpdatePlanMealItemRequest mealItemPlan)
     {
         var mealPlan = await _mealPlanRepository.GetMealPlanByIdAsync(mealPlanId);
         if (mealPlan == null)
-            return Result<MealItemPlanDto>.Failure(MealPlanErrors.MealPlanNotFound);
+            return Result<PlanMealItemResponse>.Failure(MealPlanErrors.MealPlanNotFound);
         if (!await UserHasEditAccessToPlan(userId, mealPlan.PlanId))
-            return Result<MealItemPlanDto>.Failure(MealPlanErrors.Unauthorized);
+            return Result<PlanMealItemResponse>.Failure(MealPlanErrors.Unauthorized);
 
         var items = await _mealItemPlanRepository.GetMealItemsForMealPlanAsync(mealItemPlan.MealPlanId);
         var entity = items.FirstOrDefault(mip => mip.Id == mealItemPlan.Id);
         if (entity == null)
-            return Result<MealItemPlanDto>.Failure(MealPlanErrors.MealPlanNotFound);
+            return Result<PlanMealItemResponse>.Failure(MealPlanErrors.MealPlanNotFound);
+
 
         entity.MealItemId = mealItemPlan.MealItemId ?? entity.MealItemId;
         entity.AssignedToGuestName = mealItemPlan.AssignedToGuestName ?? entity.AssignedToGuestName;
         entity.AssignedToUserId = mealItemPlan.AssignedToUser ?? entity.AssignedToUserId;
-        entity.Status = mealItemPlan.Status != null ? EnumMappings.ToEntityItemStatus(mealItemPlan.Status.Value) : entity.Status;
         entity.Notes = mealItemPlan.Notes ?? entity.Notes;
-
+        if (mealItemPlan.StatusTypeId.HasValue)
+        {
+            entity.StatusId = mealItemPlan.StatusTypeId.Value;
+        }
+        else
+        {
+            var itemStatus = await GetMealItemPlanStatusType(mealItemPlan.StatusTypeName);
+            if (!itemStatus.IsSuccess)
+                return Result<PlanMealItemResponse>.Failure(MealItemStatusErrors.MealItemStatusNotFound);
+            entity.StatusId = itemStatus.Value!.Id;
+        }
         var success = await _mealItemPlanRepository.UpdateMealItemInMealPlanAsync(entity);
         if (!success)
-            return Result<MealItemPlanDto>.Failure(MealPlanErrors.UnableToUpdate);
+            return Result<PlanMealItemResponse>.Failure(MealPlanErrors.UnableToUpdate);
 
-        return Result<MealItemPlanDto>.Success(ToItemDto(entity));
+        return Result<PlanMealItemResponse>.Success(ToItemDto(entity));
     }
 
-    public async Task<Result<bool>> RemoveMealItemFromPlanAsync(int userId, int mealItemPlanId)
+    public async Task<Result<bool>> RemoveMealItemFromPlanAsync(Guid userId, Guid mealItemPlanId)
     {
         var mealItemPlan = await _mealItemPlanRepository.GetByIdAsync(mealItemPlanId);
         if (mealItemPlan == null)
@@ -206,30 +231,30 @@ public class MealPlanService : IMealPlanService
 
     #region private helper methods
 
-    private async Task<bool> UserHasAccessToPlan(int userId, int planId)
+    private async Task<bool> UserHasAccessToPlan(Guid userId, Guid planId)
     {
         var plan = await _planRepository.GetPlanByIdAsync(planId);
         if (plan == null) return false;
         if (plan.OwnerUserId == userId) return true;
 
-        var permissions = await _identityClient.GetPermissionsForResourceAsync(ResourceType.Plan, planId);
+        var permissions = await _accessService.GetPlansSharedWithUser(userId);
         return permissions.IsSuccess && permissions.Value!.Any(p => p.SubjectId == userId);
     }
 
-    private async Task<bool> UserHasEditAccessToPlan(int userId, int planId)
+    private async Task<bool> UserHasEditAccessToPlan(Guid userId, Guid planId)
     {
         var plan = await _planRepository.GetPlanByIdAsync(planId);
         if (plan == null) return false;
         if (plan.OwnerUserId == userId) return true;
 
-        var permissions = await _identityClient.GetPermissionsForResourceAsync(ResourceType.Plan, planId);
-        return permissions.IsSuccess && permissions.Value!.Any(p => p.SubjectId == userId && p.Permission >= Shared.Models.Permission.Edit);
+        var permissions = await _accessService.GetPlansSharedWithUser(userId);
+        return permissions.IsSuccess && permissions.Value!.Any(p => p.SubjectId == userId && p.PermissionTypeName == "edit");
     }
 
-    private async Task<IEnumerable<MealPlanDto>> FilterToUserMealPlans(int userId, IEnumerable<MealPlan> plans)
+    private async Task<IEnumerable<PlanMealResponse>> FilterToUserMealPlans(Guid userId, IEnumerable<PlanMeal> plans)
     {
-        var result = new List<MealPlanDto>();
-        var checkedPlanIds = new Dictionary<int, bool>();
+        var result = new List<PlanMealResponse>();
+        var checkedPlanIds = new Dictionary<Guid, bool>();
         foreach (var mp in plans)
         {
             if (!checkedPlanIds.TryGetValue(mp.PlanId, out var hasAccess))
@@ -243,7 +268,7 @@ public class MealPlanService : IMealPlanService
         return result;
     }
 
-    private static MealPlanDto ToDto(MealPlan plan) => new(
+    private static PlanMealResponse ToDto(PlanMeal plan) => new(
         Id: plan.Id,
         MealId: plan.MealId,
         PlanId: plan.PlanId,
@@ -254,17 +279,25 @@ public class MealPlanService : IMealPlanService
         UpdatedAt: plan.UpdatedAt
     );
 
-    private static MealItemPlanDto ToItemDto(MealItemPlan mip) => new(
+    private static PlanMealItemResponse ToItemDto(PlanMealItem mip) => new(
         Id: mip.Id,
         MealPlanId: mip.MealPlanId,
         MealItemId: mip.MealItemId,
         AssignedToGuestName: mip.AssignedToGuestName,
         AssignedToUser: mip.AssignedToUserId,
-        Status: EnumMappings.ToDtoItemStatus(mip.Status),
+        StatusTypeId: mip.StatusId,
+        StatusTypeName: mip.MealItemPlanStatusType.Name,
         Notes: mip.Notes,
         CreatedAt: mip.CreatedAt,
         UpdatedAt: mip.UpdatedAt
     );
 
+    private async Task<Result<MealItemPlanStatusType>> GetMealItemPlanStatusType(string name)
+    {
+        var mealItemStatusType = await _planMealItemStatusTypeRepository.GetByNameAsync(name);
+        if (mealItemStatusType == null)
+            return Result<MealItemPlanStatusType>.Failure(MealItemStatusErrors.MealItemStatusNotFound);
+        return Result<MealItemPlanStatusType>.Success(mealItemStatusType);
+    }
     #endregion
 }

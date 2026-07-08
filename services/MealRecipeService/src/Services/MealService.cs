@@ -1,7 +1,7 @@
 
 using MealRecipeService.Models;
 using MealRecipeService.Interfaces;
-using MealRecipeService.Clients;
+ 
 using Shared.Models;
 using MealRecipeService.Contracts;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions;

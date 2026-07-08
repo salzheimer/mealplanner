@@ -7,7 +7,6 @@ using PlanService.Models;
 using Shared.Models;
 using System.Security.Claims;
 using Xunit;
-using Permission = Shared.Models.Permission;
 
 namespace PlanService.Tests.Controllers;
 
@@ -15,7 +14,7 @@ public class PlansControllerTests
 {
     private readonly Mock<IPlanningService> _planningService;
     private readonly PlansController _controller;
-    private const int UserId = 1;
+    private static readonly Guid UserId = Guid.NewGuid();
 
     public PlansControllerTests()
     {
@@ -24,7 +23,7 @@ public class PlansControllerTests
         SetAuthenticatedUser(_controller, UserId);
     }
 
-    private static void SetAuthenticatedUser(ControllerBase controller, int userId)
+    private static void SetAuthenticatedUser(ControllerBase controller, Guid userId)
     {
         controller.ControllerContext = new ControllerContext
         {
@@ -38,12 +37,12 @@ public class PlansControllerTests
         };
     }
 
-    private static PlanSummaryDto MakePlan(int id = 1) => new(
-        id, "Weekly Meal Plan", UserId, DateTime.UtcNow, DateTime.UtcNow.AddDays(7)
+    private static PlanSummaryResponse MakePlan(Guid? id = null) => new(
+        id ?? Guid.NewGuid(), "Weekly Meal Plan", UserId, DateTime.UtcNow, DateTime.UtcNow.AddDays(7)
     );
 
-    private static PlanShareDto MakePlanShare(int id = 1, int planId = 1) => new(
-        id, planId, 2, null, UserId, Permission.View, DateTime.UtcNow, null
+    private static SharePlanResponse MakeShareResponse(Guid planId) => new(
+        planId, "Plan", 1, "User", 1, "View", 1, Guid.NewGuid(), UserId, null
     );
 
     // --- GetAllUserPlans ---
@@ -51,14 +50,14 @@ public class PlansControllerTests
     [Fact]
     public async Task GetAllUserPlans_Success_Returns200WithPlans()
     {
-        var plans = new List<PlanSummaryDto> { MakePlan(1), MakePlan(2) };
+        var plans = new List<PlanSummaryResponse> { MakePlan(), MakePlan() };
         _planningService.Setup(s => s.GetPlansForUserAsync(UserId))
-            .ReturnsAsync(Result<IEnumerable<PlanSummaryDto>>.Success(plans));
+            .ReturnsAsync(Result<IEnumerable<PlanSummaryResponse>>.Success(plans));
 
         var result = await _controller.GetAllUserPlans();
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsAssignableFrom<IEnumerable<PlanSummaryDto>>(ok.Value);
+        var value = Assert.IsAssignableFrom<IEnumerable<PlanSummaryResponse>>(ok.Value);
         Assert.Equal(2, value.Count());
     }
 
@@ -66,7 +65,7 @@ public class PlansControllerTests
     public async Task GetAllUserPlans_ServiceFailure_Returns404()
     {
         _planningService.Setup(s => s.GetPlansForUserAsync(UserId))
-            .ReturnsAsync(Result<IEnumerable<PlanSummaryDto>>.Failure(PlanErrors.PlanNotFound));
+            .ReturnsAsync(Result<IEnumerable<PlanSummaryResponse>>.Failure(PlanErrors.PlanNotFound));
 
         var result = await _controller.GetAllUserPlans();
 
@@ -79,14 +78,14 @@ public class PlansControllerTests
     public async Task GetPlansByStartDate_Success_Returns200WithPlans()
     {
         var startDate = DateTime.UtcNow;
-        var plans = new List<PlanSummaryDto> { MakePlan(1) };
+        var plans = new List<PlanSummaryResponse> { MakePlan() };
         _planningService.Setup(s => s.GetPlansByStartDateAsync(UserId, startDate))
-            .ReturnsAsync(Result<IEnumerable<PlanSummaryDto>>.Success(plans));
+            .ReturnsAsync(Result<IEnumerable<PlanSummaryResponse>>.Success(plans));
 
         var result = await _controller.GetPlansByStartDate(startDate);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsAssignableFrom<IEnumerable<PlanSummaryDto>>(ok.Value);
+        var value = Assert.IsAssignableFrom<IEnumerable<PlanSummaryResponse>>(ok.Value);
         Assert.Single(value);
     }
 
@@ -95,7 +94,7 @@ public class PlansControllerTests
     {
         var startDate = DateTime.UtcNow;
         _planningService.Setup(s => s.GetPlansByStartDateAsync(UserId, startDate))
-            .ReturnsAsync(Result<IEnumerable<PlanSummaryDto>>.Failure(PlanErrors.PlanNotFound));
+            .ReturnsAsync(Result<IEnumerable<PlanSummaryResponse>>.Failure(PlanErrors.PlanNotFound));
 
         var result = await _controller.GetPlansByStartDate(startDate);
 
@@ -108,14 +107,14 @@ public class PlansControllerTests
     public async Task GetPlansByEndDate_Success_Returns200WithPlans()
     {
         var endDate = DateTime.UtcNow.AddDays(7);
-        var plans = new List<PlanSummaryDto> { MakePlan(1) };
+        var plans = new List<PlanSummaryResponse> { MakePlan() };
         _planningService.Setup(s => s.GetPlansByEndDateAsync(UserId, endDate))
-            .ReturnsAsync(Result<IEnumerable<PlanSummaryDto>>.Success(plans));
+            .ReturnsAsync(Result<IEnumerable<PlanSummaryResponse>>.Success(plans));
 
         var result = await _controller.GetPlansByEndDate(endDate);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsAssignableFrom<IEnumerable<PlanSummaryDto>>(ok.Value);
+        var value = Assert.IsAssignableFrom<IEnumerable<PlanSummaryResponse>>(ok.Value);
         Assert.Single(value);
     }
 
@@ -124,7 +123,7 @@ public class PlansControllerTests
     {
         var endDate = DateTime.UtcNow.AddDays(7);
         _planningService.Setup(s => s.GetPlansByEndDateAsync(UserId, endDate))
-            .ReturnsAsync(Result<IEnumerable<PlanSummaryDto>>.Failure(PlanErrors.PlanNotFound));
+            .ReturnsAsync(Result<IEnumerable<PlanSummaryResponse>>.Failure(PlanErrors.PlanNotFound));
 
         var result = await _controller.GetPlansByEndDate(endDate);
 
@@ -136,23 +135,25 @@ public class PlansControllerTests
     [Fact]
     public async Task GetById_ExistingPlan_Returns200WithPlan()
     {
-        _planningService.Setup(s => s.GetPlanByIdAsync(UserId, 1))
-            .ReturnsAsync(Result<PlanSummaryDto>.Success(MakePlan(1)));
+        var planId = Guid.NewGuid();
+        _planningService.Setup(s => s.GetPlanByIdAsync(UserId, planId))
+            .ReturnsAsync(Result<PlanSummaryResponse>.Success(MakePlan(planId)));
 
-        var result = await _controller.GetById(1);
+        var result = await _controller.GetById(planId);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsType<PlanSummaryDto>(ok.Value);
-        Assert.Equal(1, value.Id);
+        var value = Assert.IsType<PlanSummaryResponse>(ok.Value);
+        Assert.Equal(planId, value.Id);
     }
 
     [Fact]
     public async Task GetById_NonExistentPlan_Returns404()
     {
-        _planningService.Setup(s => s.GetPlanByIdAsync(UserId, 999))
-            .ReturnsAsync(Result<PlanSummaryDto>.Failure(PlanErrors.PlanNotFound));
+        var planId = Guid.NewGuid();
+        _planningService.Setup(s => s.GetPlanByIdAsync(UserId, planId))
+            .ReturnsAsync(Result<PlanSummaryResponse>.Failure(PlanErrors.PlanNotFound));
 
-        var result = await _controller.GetById(999);
+        var result = await _controller.GetById(planId);
 
         Assert.IsType<NotFoundObjectResult>(result);
     }
@@ -164,14 +165,14 @@ public class PlansControllerTests
     {
         var start = DateTime.UtcNow;
         var end = DateTime.UtcNow.AddDays(7);
-        var plans = new List<PlanSummaryDto> { MakePlan(1), MakePlan(2) };
+        var plans = new List<PlanSummaryResponse> { MakePlan(), MakePlan() };
         _planningService.Setup(s => s.GetPlansByDateRangeAsync(UserId, start, end))
-            .ReturnsAsync(Result<IEnumerable<PlanSummaryDto>>.Success(plans));
+            .ReturnsAsync(Result<IEnumerable<PlanSummaryResponse>>.Success(plans));
 
         var result = await _controller.GetPlansByDateRange(start, end);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsAssignableFrom<IEnumerable<PlanSummaryDto>>(ok.Value);
+        var value = Assert.IsAssignableFrom<IEnumerable<PlanSummaryResponse>>(ok.Value);
         Assert.Equal(2, value.Count());
     }
 
@@ -181,11 +182,38 @@ public class PlansControllerTests
         var start = DateTime.UtcNow;
         var end = DateTime.UtcNow.AddDays(7);
         _planningService.Setup(s => s.GetPlansByDateRangeAsync(UserId, start, end))
-            .ReturnsAsync(Result<IEnumerable<PlanSummaryDto>>.Failure(PlanErrors.InvalidInput));
+            .ReturnsAsync(Result<IEnumerable<PlanSummaryResponse>>.Failure(PlanErrors.InvalidInput));
 
         var result = await _controller.GetPlansByDateRange(start, end);
 
         Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    // --- PlansSharedWithMe ---
+
+    [Fact]
+    public async Task PlansSharedWithMe_Success_Returns200WithPlans()
+    {
+        var plans = new List<PlanSummaryResponse> { MakePlan() };
+        _planningService.Setup(s => s.GetPlansSharedWithMeAsync(UserId))
+            .ReturnsAsync(Result<IEnumerable<PlanSummaryResponse>>.Success(plans));
+
+        var result = await _controller.PlansSharedWithMe();
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var value = Assert.IsAssignableFrom<IEnumerable<PlanSummaryResponse>>(ok.Value);
+        Assert.Single(value);
+    }
+
+    [Fact]
+    public async Task PlansSharedWithMe_ServiceFailure_Returns404()
+    {
+        _planningService.Setup(s => s.GetPlansSharedWithMeAsync(UserId))
+            .ReturnsAsync(Result<IEnumerable<PlanSummaryResponse>>.Failure(PlanErrors.PlanNotFound));
+
+        var result = await _controller.PlansSharedWithMe();
+
+        Assert.IsType<NotFoundObjectResult>(result);
     }
 
     // --- CreatePlan ---
@@ -193,23 +221,23 @@ public class PlansControllerTests
     [Fact]
     public async Task CreatePlan_ValidPlan_Returns200WithPlan()
     {
-        var createDto = new PlanCreateDto("Weekly Plan", DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
+        var createDto = new CreatePlanRequest("Weekly Plan", DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
         _planningService.Setup(s => s.CreatePlanAsync(UserId, createDto))
-            .ReturnsAsync(Result<PlanSummaryDto>.Success(MakePlan(1)));
+            .ReturnsAsync(Result<PlanSummaryResponse>.Success(MakePlan()));
 
         var result = await _controller.CreatePlan(createDto);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsType<PlanSummaryDto>(ok.Value);
+        var value = Assert.IsType<PlanSummaryResponse>(ok.Value);
         Assert.Equal("Weekly Meal Plan", value.Name);
     }
 
     [Fact]
     public async Task CreatePlan_ServiceFailure_Returns400()
     {
-        var createDto = new PlanCreateDto(null, DateTime.UtcNow, null);
+        var createDto = new CreatePlanRequest(null, DateTime.UtcNow, null);
         _planningService.Setup(s => s.CreatePlanAsync(UserId, createDto))
-            .ReturnsAsync(Result<PlanSummaryDto>.Failure(PlanErrors.UnableToCreate));
+            .ReturnsAsync(Result<PlanSummaryResponse>.Failure(PlanErrors.UnableToCreate));
 
         var result = await _controller.CreatePlan(createDto);
 
@@ -221,25 +249,27 @@ public class PlansControllerTests
     [Fact]
     public async Task UpdatePlan_ExistingPlan_Returns200WithPlan()
     {
-        var updateDto = new PlanUpdateDto(1, "Updated Plan", DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
-        _planningService.Setup(s => s.UpdatePlanAsync(UserId, 1, updateDto))
-            .ReturnsAsync(Result<PlanSummaryDto>.Success(MakePlan(1)));
+        var planId = Guid.NewGuid();
+        var updateDto = new UpdatePlanRequest(planId, "Updated Plan", DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
+        _planningService.Setup(s => s.UpdatePlanAsync(UserId, planId, updateDto))
+            .ReturnsAsync(Result<PlanSummaryResponse>.Success(MakePlan(planId)));
 
-        var result = await _controller.UpdatePlan(1, updateDto);
+        var result = await _controller.UpdatePlan(planId, updateDto);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsType<PlanSummaryDto>(ok.Value);
-        Assert.Equal(1, value.Id);
+        var value = Assert.IsType<PlanSummaryResponse>(ok.Value);
+        Assert.Equal(planId, value.Id);
     }
 
     [Fact]
     public async Task UpdatePlan_NonExistentPlan_Returns400()
     {
-        var updateDto = new PlanUpdateDto(999, "Updated Plan", DateTime.UtcNow, null);
-        _planningService.Setup(s => s.UpdatePlanAsync(UserId, 999, updateDto))
-            .ReturnsAsync(Result<PlanSummaryDto>.Failure(PlanErrors.UnableToUpdate));
+        var planId = Guid.NewGuid();
+        var updateDto = new UpdatePlanRequest(planId, "Updated Plan", DateTime.UtcNow, null);
+        _planningService.Setup(s => s.UpdatePlanAsync(UserId, planId, updateDto))
+            .ReturnsAsync(Result<PlanSummaryResponse>.Failure(PlanErrors.UnableToUpdate));
 
-        var result = await _controller.UpdatePlan(999, updateDto);
+        var result = await _controller.UpdatePlan(planId, updateDto);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
@@ -249,10 +279,11 @@ public class PlansControllerTests
     [Fact]
     public async Task DeletePlan_ExistingPlan_Returns200()
     {
-        _planningService.Setup(s => s.DeletePlanAsync(UserId, 1))
+        var planId = Guid.NewGuid();
+        _planningService.Setup(s => s.DeletePlanAsync(UserId, planId))
             .ReturnsAsync(Result<bool>.Success(true));
 
-        var result = await _controller.DeletePlan(1);
+        var result = await _controller.DeletePlan(planId);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         Assert.Equal(true, ok.Value);
@@ -261,145 +292,40 @@ public class PlansControllerTests
     [Fact]
     public async Task DeletePlan_NonExistentPlan_Returns400()
     {
-        _planningService.Setup(s => s.DeletePlanAsync(UserId, 999))
+        var planId = Guid.NewGuid();
+        _planningService.Setup(s => s.DeletePlanAsync(UserId, planId))
             .ReturnsAsync(Result<bool>.Failure(PlanErrors.UnableToDelete));
 
-        var result = await _controller.DeletePlan(999);
+        var result = await _controller.DeletePlan(planId);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
 
-    // --- CreatePlanShare ---
+    // --- SharePlan ---
 
     [Fact]
-    public async Task CreatePlanShare_ValidShare_Returns200WithShareDto()
+    public async Task SharePlan_ValidRequest_Returns200WithShareResponse()
     {
-        var createDto = new PlanShareCreateDto(0, 1, 2, null, UserId, Permission.View, null);
-        _planningService.Setup(s => s.CreatePlanShareAsync(UserId, createDto))
-            .ReturnsAsync(Result<PlanShareDto>.Success(MakePlanShare(1, 1)));
+        var planId = Guid.NewGuid();
+        var shareRequest = new SharePlanRequest(planId, "User", Guid.NewGuid(), "View", UserId, null);
+        _planningService.Setup(s => s.SharePlanAsync(UserId, shareRequest))
+            .ReturnsAsync(Result<SharePlanResponse>.Success(MakeShareResponse(planId)));
 
-        var result = await _controller.CreatePlanShare(createDto);
+        var result = await _controller.SharePlan(shareRequest);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsType<PlanShareDto>(ok.Value);
-        Assert.Equal(1, value.PlanId);
+        var value = Assert.IsType<SharePlanResponse>(ok.Value);
+        Assert.Equal(planId, value.PlanId);
     }
 
     [Fact]
-    public async Task CreatePlanShare_ServiceFailure_Returns400()
+    public async Task SharePlan_ServiceFailure_Returns400()
     {
-        var createDto = new PlanShareCreateDto(0, 999, 2, null, UserId, Permission.View, null);
-        _planningService.Setup(s => s.CreatePlanShareAsync(UserId, createDto))
-            .ReturnsAsync(Result<PlanShareDto>.Failure(PlanErrors.UnableToShare));
+        var shareRequest = new SharePlanRequest(Guid.NewGuid(), "User", Guid.NewGuid(), "View", UserId, null);
+        _planningService.Setup(s => s.SharePlanAsync(UserId, shareRequest))
+            .ReturnsAsync(Result<SharePlanResponse>.Failure(PlanErrors.UnableToShare));
 
-        var result = await _controller.CreatePlanShare(createDto);
-
-        Assert.IsType<BadRequestObjectResult>(result);
-    }
-
-    // --- GetPlanSharesByPlanId ---
-
-    [Fact]
-    public async Task GetPlanSharesByPlanId_ExistingPlan_Returns200WithShares()
-    {
-        var shares = new List<PlanShareDto> { MakePlanShare(1, 1), MakePlanShare(2, 1) };
-        _planningService.Setup(s => s.GetPlanSharesByPlanIdAsync(UserId, 1))
-            .ReturnsAsync(Result<IEnumerable<PlanShareDto>>.Success(shares));
-
-        var result = await _controller.GetPlanSharesByPlanId(1);
-
-        var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsAssignableFrom<IEnumerable<PlanShareDto>>(ok.Value);
-        Assert.Equal(2, value.Count());
-    }
-
-    [Fact]
-    public async Task GetPlanSharesByPlanId_NonExistentPlan_Returns404()
-    {
-        _planningService.Setup(s => s.GetPlanSharesByPlanIdAsync(UserId, 999))
-            .ReturnsAsync(Result<IEnumerable<PlanShareDto>>.Failure(PlanErrors.PlanNotFound));
-
-        var result = await _controller.GetPlanSharesByPlanId(999);
-
-        Assert.IsType<NotFoundObjectResult>(result);
-    }
-
-    // --- GetPlanSharesByUserId ---
-
-    [Fact]
-    public async Task GetPlanSharesByUserId_Success_Returns200WithShares()
-    {
-        var shares = new List<PlanShareDto> { MakePlanShare(1, 1) };
-        _planningService.Setup(s => s.GetPlanSharesBySharedByUserIdAsync(UserId))
-            .ReturnsAsync(Result<IEnumerable<PlanShareDto>>.Success(shares));
-
-        var result = await _controller.GetPlanSharesByUserId();
-
-        var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsAssignableFrom<IEnumerable<PlanShareDto>>(ok.Value);
-        Assert.Single(value);
-    }
-
-    [Fact]
-    public async Task GetPlanSharesByUserId_ServiceFailure_Returns404()
-    {
-        _planningService.Setup(s => s.GetPlanSharesBySharedByUserIdAsync(UserId))
-            .ReturnsAsync(Result<IEnumerable<PlanShareDto>>.Failure(PlanErrors.PlanNotFound));
-
-        var result = await _controller.GetPlanSharesByUserId();
-
-        Assert.IsType<NotFoundObjectResult>(result);
-    }
-
-    // --- UpdatePlanShare ---
-
-    [Fact]
-    public async Task UpdatePlanShare_ExistingShare_Returns200WithUpdatedShare()
-    {
-        var updateDto = new PlanShareUpdateDto(1, 1, 2, null, UserId, Permission.Edit, null);
-        _planningService.Setup(s => s.UpdatePlanShareAsync(UserId, 1, updateDto))
-            .ReturnsAsync(Result<PlanShareDto>.Success(MakePlanShare(1, 1)));
-
-        var result = await _controller.UpdatePlanShare(1, updateDto);
-
-        var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsType<PlanShareDto>(ok.Value);
-        Assert.Equal(1, value.Id);
-    }
-
-    [Fact]
-    public async Task UpdatePlanShare_NonExistentShare_Returns404()
-    {
-        var updateDto = new PlanShareUpdateDto(999, 1, 2, null, UserId, Permission.Edit, null);
-        _planningService.Setup(s => s.UpdatePlanShareAsync(UserId, 999, updateDto))
-            .ReturnsAsync(Result<PlanShareDto>.Failure(PlanErrors.PlanShareNotFound));
-
-        var result = await _controller.UpdatePlanShare(999, updateDto);
-
-        Assert.IsType<NotFoundObjectResult>(result);
-    }
-
-    // --- DeletePlanShare ---
-
-    [Fact]
-    public async Task DeletePlanShare_ExistingShare_Returns200()
-    {
-        _planningService.Setup(s => s.DeletePlanShareAsync(UserId, 1))
-            .ReturnsAsync(Result<bool>.Success(true));
-
-        var result = await _controller.DeletePlanShare(1, 1);
-
-        var ok = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal(true, ok.Value);
-    }
-
-    [Fact]
-    public async Task DeletePlanShare_NonExistentShare_Returns400()
-    {
-        _planningService.Setup(s => s.DeletePlanShareAsync(UserId, 999))
-            .ReturnsAsync(Result<bool>.Failure(PlanErrors.UnableToDelete));
-
-        var result = await _controller.DeletePlanShare(1, 999);
+        var result = await _controller.SharePlan(shareRequest);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }

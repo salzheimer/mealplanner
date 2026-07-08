@@ -24,12 +24,12 @@ public class MealPlanController : BaseController
 
     [HttpPost]
      
-    public async Task<IActionResult> CreateMealPlan([FromBody] MealPlanCreateDto mealPlan)
+    public async Task<IActionResult> CreateMealPlan([FromBody] CreatePlanMealRequest mealPlan)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
         if (authenticatedUserId == null)
         {
-            return HandleResult(Result<MealPlanDto?>.Failure(MealPlanErrors.Unauthorized));
+            return HandleResult(Result<PlanMealResponse?>.Failure(MealPlanErrors.Unauthorized));
         }
         var result = HandleResult(await _mealPlanService.CreateMealPlanAsync(authenticatedUserId.Value, mealPlan));
         return result;
@@ -41,21 +41,21 @@ public class MealPlanController : BaseController
         var authenticatedUserId = GetAuthenticatedUserId();
         if (authenticatedUserId == null)
         {
-            return HandleResult(Result<IEnumerable<MealPlanDto>?>.Failure(MealPlanErrors.Unauthorized));
+            return HandleResult(Result<IEnumerable<PlanMealResponse>?>.Failure(MealPlanErrors.Unauthorized));
         }
 
         var result = HandleResult(await _mealPlanService.GetMealPlansForUserAsync(authenticatedUserId.Value));
         return result;
     }
 
-    [HttpGet("{id:int}")]
+    [HttpGet("{id:Guid}")]
      
-    public async Task<IActionResult> GetMealPlanById(int id)
+    public async Task<IActionResult> GetMealPlanById(Guid id)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
         if (authenticatedUserId == null)
         {
-            return HandleResult(Result<MealPlanDto?>.Failure(MealPlanErrors.Unauthorized));
+            return HandleResult(Result<PlanMealResponse?>.Failure(MealPlanErrors.Unauthorized));
         }
         var result = HandleResult(await _mealPlanService.GetMealPlanByIdAsync(authenticatedUserId.Value, id));
         return result;
@@ -69,7 +69,7 @@ public class MealPlanController : BaseController
         var authenticatedUserId = GetAuthenticatedUserId();
         if (authenticatedUserId == null)
         {
-            return HandleResult(Result<IEnumerable<MealPlanDto>?>.Failure(MealPlanErrors.Unauthorized));
+            return HandleResult(Result<IEnumerable<PlanMealResponse>?>.Failure(MealPlanErrors.Unauthorized));
         }
         var result = HandleResult(await _mealPlanService.GetMealPlansByStartDateAsync(authenticatedUserId.Value, serveDate));
         return result;
@@ -81,7 +81,7 @@ public class MealPlanController : BaseController
         var authenticatedUserId = GetAuthenticatedUserId();
         if (authenticatedUserId == null)
         {
-            return HandleResult(Result<IEnumerable<MealPlanDto>?>.Failure(MealPlanErrors.Unauthorized));
+            return HandleResult(Result<IEnumerable<PlanMealResponse>?>.Failure(MealPlanErrors.Unauthorized));
         }
         var result = HandleResult(await _mealPlanService.GetMealPlansByEndDateAsync(authenticatedUserId.Value, endDate));
         return result;
@@ -93,7 +93,7 @@ public class MealPlanController : BaseController
         var authenticatedUserId = GetAuthenticatedUserId();
         if (authenticatedUserId == null)
         {
-            return HandleResult(Result<IEnumerable<MealPlanDto>?>.Failure(MealPlanErrors.Unauthorized));
+            return HandleResult(Result<IEnumerable<PlanMealResponse>?>.Failure(MealPlanErrors.Unauthorized));
         }
         var result = HandleResult(await _mealPlanService.GetMealPlansByDateRangeAsync(authenticatedUserId.Value, startDate, endDate));
         return result;
@@ -101,19 +101,19 @@ public class MealPlanController : BaseController
 
     [HttpPut]
     
-    public async Task<IActionResult> UpdateMealPlan([FromBody] MealPlanUpdateDto mealPlan)
+    public async Task<IActionResult> UpdateMealPlan([FromBody] UpdatePlanMealRequest mealPlan)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
         if (authenticatedUserId == null)
         {
-            return HandleResult(Result<MealPlanDto?>.Failure(MealPlanErrors.Unauthorized));
+            return HandleResult(Result<PlanMealResponse?>.Failure(MealPlanErrors.Unauthorized));
         }
         var result = HandleResult(await _mealPlanService.UpdateMealPlanAsync(authenticatedUserId.Value, mealPlan));
         return result;
     }
-    [HttpDelete("{id:int}")]
+    [HttpDelete("{id:Guid}")]
      
-    public async Task<IActionResult> DeleteMealPlan(int id)
+    public async Task<IActionResult> DeleteMealPlan(Guid id)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
         if (authenticatedUserId == null)
@@ -125,45 +125,45 @@ public class MealPlanController : BaseController
     }
 
     // MealItemPlan Endpoints
-    [HttpPost("{mealplanId:int}/mealitems/")]
+    [HttpPost("{mealplanId:Guid}/mealitems/")]
     
-    public async Task<IActionResult> AddMealItemToPlan(int mealPlanId, [FromBody] MealItemPlanCreateDto mealItemPlan)
+    public async Task<IActionResult> AddMealItemToPlan(Guid mealPlanId, [FromBody] CreatePlanMealItemRequest mealItemPlan)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
         if (authenticatedUserId == null)
         {
-            return HandleResult(Result<MealItemPlanDto?>.Failure(MealPlanErrors.Unauthorized));
+            return HandleResult(Result<PlanMealItemResponse?>.Failure(MealPlanErrors.Unauthorized));
         }
         var result = HandleResult(await _mealPlanService.AddMealItemToPlanAsync(authenticatedUserId.Value, mealPlanId, mealItemPlan));
         return result;
     }
-    [HttpGet("{mealplanId:int}/mealitems")]
+    [HttpGet("{mealplanId:Guid}/mealitems")]
      
-    public async Task<IActionResult> GetMealItemsForPlan(int mealplanId)
+    public async Task<IActionResult> GetMealItemsForPlan(Guid mealplanId)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
         if (authenticatedUserId == null)
         {
-            return HandleResult(Result<IEnumerable<MealItemPlanDto>?>.Failure(MealPlanErrors.Unauthorized));
+            return HandleResult(Result<IEnumerable<PlanMealItemResponse>?>.Failure(MealPlanErrors.Unauthorized));
         }
         var result = HandleResult(await _mealPlanService.GetMealItemsForMealPlanAsync(authenticatedUserId.Value, mealplanId));
         return result;
     }
-    [HttpPut("{mealPlanId:int}/mealitems/{mealItemId}")]
+    [HttpPut("{mealPlanId:Guid}/mealitems/{mealItemId}")]
     
-    public async Task<IActionResult> UpdateMealItemInPlan(int mealPlanId, int mealItemId,[FromBody] MealItemPlanUpdateDto mealItemPlan)
+    public async Task<IActionResult> UpdateMealItemInPlan(Guid mealPlanId, Guid mealItemId,[FromBody] UpdatePlanMealItemRequest mealItemPlan)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
         if (authenticatedUserId == null)
         {
-            return HandleResult(Result<MealItemPlanDto?>.Failure(MealPlanErrors.Unauthorized));
+            return HandleResult(Result<PlanMealItemResponse?>.Failure(MealPlanErrors.Unauthorized));
         }
         var result = HandleResult(await _mealPlanService.UpdateMealItemInPlanAsync(authenticatedUserId.Value,mealPlanId, mealItemId ,mealItemPlan));
         return result;
     }
     [HttpDelete("mealitem/{mealItemPlanId:int}")]
     
-    public async Task<IActionResult> RemoveMealItemFromPlan(int mealItemPlanId)
+    public async Task<IActionResult> RemoveMealItemFromPlan(Guid mealItemPlanId)
     {
         var authenticatedUserId = GetAuthenticatedUserId();
         if (authenticatedUserId == null)

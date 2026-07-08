@@ -1,10 +1,11 @@
+using MassTransit;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using Scalar.AspNetCore;
 using IdentityService.Interfaces;
 using IdentityService.Models;
 using IdentityService.Repositories;
 using IdentityService.Services;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
-using Scalar.AspNetCore;
 using Shared.Models;
 using Shared.Services;
 
@@ -84,17 +85,31 @@ builder.Services.AddAuthorization(options =>
             }));
 });
 
+
+//RabbitMQ
+builder.Services.AddMassTransit(x =>
+{
+    x.UsingRabbitMq((ctx, cfg) =>
+    {
+        cfg.Host(builder.Configuration["RabbitMq:Host"], h =>
+        {
+            h.Username(builder.Configuration["RabbitMq:Username"]);
+            h.Password(builder.Configuration["RabbitMq:Password"]);
+        });
+    });
+});
 // In-memory user store
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserCredentialsRepository, UserCredentialsRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ISessionRepository, SessionRepository>();
-builder.Services.AddScoped<IResourcePermissionRepository, ResourcePermissionRepository>();
-builder.Services.AddScoped<IResourcePermissionService, ResourcePermissionService>();
 builder.Services.AddScoped<IClientTypeRepository, ClientTypeRepository>();
-builder.Services.AddScoped<IGroupMemberRoleRepository, GroupMemberRoleRepository>();
-builder.Services.AddScoped<IGroupMemberStatusRepository, GroupMemberStatusRepository>();
+builder.Services.AddScoped<IGroupMemberRoleTypeRepository, GroupMemberRoleTypeRepository>();
+builder.Services.AddScoped<IGroupMemberStatusTypeRepository, GroupMemberStatusTypeRepository>();
+builder.Services.AddScoped<IGroupRepository, GroupRepository>();
+builder.Services.AddScoped<IGroupMemberRepository, GroupMemberRepository>();
+builder.Services.AddScoped<IGroupService,GroupService>();
 builder.Services.AddSingleton<ILookupCache, LookupCache>();
 builder.Services.AddHostedService<LookupCacheWarmup>();
 
@@ -102,7 +117,7 @@ builder.Services.AddHostedService<LookupCacheWarmup>();
 var conn = builder.Configuration.GetConnectionString("Identity");
 var dataSourceBuilder = new NpgsqlDataSourceBuilder(conn);
 var dataSource = dataSourceBuilder.Build();
-builder.Services.AddDbContext<UserContext>(options => options.UseNpgsql(dataSource));
+builder.Services.AddDbContext<IdentityDbContext>(options => options.UseNpgsql(dataSource));
 
 var app = builder.Build();
 app.UseCors();

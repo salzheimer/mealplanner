@@ -7,7 +7,6 @@ using PlanService.Models;
 using Shared.Models;
 using System.Security.Claims;
 using Xunit;
-using ItemStatus = Shared.Models.ItemStatus;
 
 namespace PlanService.Tests.Controllers;
 
@@ -15,7 +14,9 @@ public class MealPlanControllerTests
 {
     private readonly Mock<IMealPlanService> _mealPlanService;
     private readonly MealPlanController _controller;
-    private const int UserId = 1;
+    private static readonly Guid UserId = Guid.NewGuid();
+    private static readonly Guid SampleMealId = Guid.NewGuid();
+    private static readonly Guid SampleMealItemId = Guid.NewGuid();
 
     public MealPlanControllerTests()
     {
@@ -24,7 +25,7 @@ public class MealPlanControllerTests
         SetAuthenticatedUser(_controller, UserId);
     }
 
-    private static void SetAuthenticatedUser(ControllerBase controller, int userId)
+    private static void SetAuthenticatedUser(ControllerBase controller, Guid userId)
     {
         controller.ControllerContext = new ControllerContext
         {
@@ -38,12 +39,12 @@ public class MealPlanControllerTests
         };
     }
 
-    private static MealPlanDto MakeMealPlan(int id = 1, int planId = 1) => new(
-        id, MealId: 10, planId, DateTime.UtcNow, null, UserId, DateTime.UtcNow, DateTime.UtcNow
+    private static PlanMealResponse MakeMealPlan(Guid? id = null, Guid? planId = null) => new(
+        id ?? Guid.NewGuid(), SampleMealId, planId ?? Guid.NewGuid(), DateTime.UtcNow, null, UserId, DateTime.UtcNow, DateTime.UtcNow
     );
 
-    private static MealItemPlanDto MakeMealItemPlan(int id = 1, int mealPlanId = 1) => new(
-        id, mealPlanId, MealItemId: 5, null, null, ItemStatus.Pending, null, DateTime.UtcNow, DateTime.UtcNow
+    private static PlanMealItemResponse MakeMealItemPlan(Guid? id = null, Guid? mealPlanId = null) => new(
+        id ?? Guid.NewGuid(), mealPlanId ?? Guid.NewGuid(), SampleMealItemId, null, null, null, "Pending", null, DateTime.UtcNow, DateTime.UtcNow
     );
 
     // --- CreateMealPlan ---
@@ -51,23 +52,24 @@ public class MealPlanControllerTests
     [Fact]
     public async Task CreateMealPlan_ValidData_Returns200WithMealPlan()
     {
-        var createDto = new MealPlanCreateDto(10, 1, DateTime.UtcNow, null, UserId);
+        var planId = Guid.NewGuid();
+        var createDto = new CreatePlanMealRequest(SampleMealId, planId, DateTime.UtcNow, null, UserId);
+        var expected = MakeMealPlan(planId: planId);
         _mealPlanService.Setup(s => s.CreateMealPlanAsync(UserId, createDto))
-            .ReturnsAsync(Result<MealPlanDto?>.Success(MakeMealPlan(1, 1)));
+            .ReturnsAsync(Result<PlanMealResponse?>.Success(expected));
 
         var result = await _controller.CreateMealPlan(createDto);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsType<MealPlanDto>(ok.Value);
-        Assert.Equal(1, value.Id);
+        Assert.IsType<PlanMealResponse>(ok.Value);
     }
 
     [Fact]
     public async Task CreateMealPlan_ServiceFailure_Returns400()
     {
-        var createDto = new MealPlanCreateDto(10, 999, DateTime.UtcNow, null, UserId);
+        var createDto = new CreatePlanMealRequest(SampleMealId, Guid.NewGuid(), DateTime.UtcNow, null, UserId);
         _mealPlanService.Setup(s => s.CreateMealPlanAsync(UserId, createDto))
-            .ReturnsAsync(Result<MealPlanDto?>.Failure(MealPlanErrors.UnableToCreate));
+            .ReturnsAsync(Result<PlanMealResponse?>.Failure(MealPlanErrors.UnableToCreate));
 
         var result = await _controller.CreateMealPlan(createDto);
 
@@ -79,14 +81,14 @@ public class MealPlanControllerTests
     [Fact]
     public async Task GetAllUserMealPlans_Success_Returns200WithMealPlans()
     {
-        var plans = new List<MealPlanDto> { MakeMealPlan(1), MakeMealPlan(2) };
+        var plans = new List<PlanMealResponse> { MakeMealPlan(), MakeMealPlan() };
         _mealPlanService.Setup(s => s.GetMealPlansForUserAsync(UserId))
-            .ReturnsAsync(Result<IEnumerable<MealPlanDto>>.Success(plans));
+            .ReturnsAsync(Result<IEnumerable<PlanMealResponse>>.Success(plans));
 
         var result = await _controller.GetAllUserMealPlans();
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsAssignableFrom<IEnumerable<MealPlanDto>>(ok.Value);
+        var value = Assert.IsAssignableFrom<IEnumerable<PlanMealResponse>>(ok.Value);
         Assert.Equal(2, value.Count());
     }
 
@@ -94,7 +96,7 @@ public class MealPlanControllerTests
     public async Task GetAllUserMealPlans_ServiceFailure_Returns404()
     {
         _mealPlanService.Setup(s => s.GetMealPlansForUserAsync(UserId))
-            .ReturnsAsync(Result<IEnumerable<MealPlanDto>>.Failure(MealPlanErrors.MealPlanNotFound));
+            .ReturnsAsync(Result<IEnumerable<PlanMealResponse>>.Failure(MealPlanErrors.MealPlanNotFound));
 
         var result = await _controller.GetAllUserMealPlans();
 
@@ -106,23 +108,25 @@ public class MealPlanControllerTests
     [Fact]
     public async Task GetMealPlanById_ExistingId_Returns200WithMealPlan()
     {
-        _mealPlanService.Setup(s => s.GetMealPlanByIdAsync(UserId, 1))
-            .ReturnsAsync(Result<MealPlanDto?>.Success(MakeMealPlan(1)));
+        var mealPlanId = Guid.NewGuid();
+        _mealPlanService.Setup(s => s.GetMealPlanByIdAsync(UserId, mealPlanId))
+            .ReturnsAsync(Result<PlanMealResponse?>.Success(MakeMealPlan(mealPlanId)));
 
-        var result = await _controller.GetMealPlanById(1);
+        var result = await _controller.GetMealPlanById(mealPlanId);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsType<MealPlanDto>(ok.Value);
-        Assert.Equal(1, value.Id);
+        var value = Assert.IsType<PlanMealResponse>(ok.Value);
+        Assert.Equal(mealPlanId, value.Id);
     }
 
     [Fact]
     public async Task GetMealPlanById_NonExistentId_Returns404()
     {
-        _mealPlanService.Setup(s => s.GetMealPlanByIdAsync(UserId, 999))
-            .ReturnsAsync(Result<MealPlanDto?>.Failure(MealPlanErrors.MealPlanNotFound));
+        var mealPlanId = Guid.NewGuid();
+        _mealPlanService.Setup(s => s.GetMealPlanByIdAsync(UserId, mealPlanId))
+            .ReturnsAsync(Result<PlanMealResponse?>.Failure(MealPlanErrors.MealPlanNotFound));
 
-        var result = await _controller.GetMealPlanById(999);
+        var result = await _controller.GetMealPlanById(mealPlanId);
 
         Assert.IsType<NotFoundObjectResult>(result);
     }
@@ -133,14 +137,14 @@ public class MealPlanControllerTests
     public async Task GetMealPlansForDate_ValidDate_Returns200WithMealPlans()
     {
         var date = DateTime.UtcNow;
-        var plans = new List<MealPlanDto> { MakeMealPlan(1) };
+        var plans = new List<PlanMealResponse> { MakeMealPlan() };
         _mealPlanService.Setup(s => s.GetMealPlansByStartDateAsync(UserId, date))
-            .ReturnsAsync(Result<IEnumerable<MealPlanDto>>.Success(plans));
+            .ReturnsAsync(Result<IEnumerable<PlanMealResponse>>.Success(plans));
 
         var result = await _controller.GetMealPlansForDate(date);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsAssignableFrom<IEnumerable<MealPlanDto>>(ok.Value);
+        var value = Assert.IsAssignableFrom<IEnumerable<PlanMealResponse>>(ok.Value);
         Assert.Single(value);
     }
 
@@ -149,7 +153,7 @@ public class MealPlanControllerTests
     {
         var date = DateTime.UtcNow;
         _mealPlanService.Setup(s => s.GetMealPlansByStartDateAsync(UserId, date))
-            .ReturnsAsync(Result<IEnumerable<MealPlanDto>>.Failure(MealPlanErrors.MealPlanNotFound));
+            .ReturnsAsync(Result<IEnumerable<PlanMealResponse>>.Failure(MealPlanErrors.MealPlanNotFound));
 
         var result = await _controller.GetMealPlansForDate(date);
 
@@ -162,14 +166,14 @@ public class MealPlanControllerTests
     public async Task GetMealPlansForEndDate_ValidDate_Returns200WithMealPlans()
     {
         var endDate = DateTime.UtcNow.AddDays(7);
-        var plans = new List<MealPlanDto> { MakeMealPlan(1) };
+        var plans = new List<PlanMealResponse> { MakeMealPlan() };
         _mealPlanService.Setup(s => s.GetMealPlansByEndDateAsync(UserId, endDate))
-            .ReturnsAsync(Result<IEnumerable<MealPlanDto>>.Success(plans));
+            .ReturnsAsync(Result<IEnumerable<PlanMealResponse>>.Success(plans));
 
         var result = await _controller.GetMealPlansForEndDate(endDate);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsAssignableFrom<IEnumerable<MealPlanDto>>(ok.Value);
+        var value = Assert.IsAssignableFrom<IEnumerable<PlanMealResponse>>(ok.Value);
         Assert.Single(value);
     }
 
@@ -178,7 +182,7 @@ public class MealPlanControllerTests
     {
         var endDate = DateTime.UtcNow.AddDays(7);
         _mealPlanService.Setup(s => s.GetMealPlansByEndDateAsync(UserId, endDate))
-            .ReturnsAsync(Result<IEnumerable<MealPlanDto>>.Failure(MealPlanErrors.MealPlanNotFound));
+            .ReturnsAsync(Result<IEnumerable<PlanMealResponse>>.Failure(MealPlanErrors.MealPlanNotFound));
 
         var result = await _controller.GetMealPlansForEndDate(endDate);
 
@@ -192,14 +196,14 @@ public class MealPlanControllerTests
     {
         var start = DateTime.UtcNow;
         var end = DateTime.UtcNow.AddDays(7);
-        var plans = new List<MealPlanDto> { MakeMealPlan(1), MakeMealPlan(2) };
+        var plans = new List<PlanMealResponse> { MakeMealPlan(), MakeMealPlan() };
         _mealPlanService.Setup(s => s.GetMealPlansByDateRangeAsync(UserId, start, end))
-            .ReturnsAsync(Result<IEnumerable<MealPlanDto>>.Success(plans));
+            .ReturnsAsync(Result<IEnumerable<PlanMealResponse>>.Success(plans));
 
         var result = await _controller.GetMealPlansForDateRange(start, end);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsAssignableFrom<IEnumerable<MealPlanDto>>(ok.Value);
+        var value = Assert.IsAssignableFrom<IEnumerable<PlanMealResponse>>(ok.Value);
         Assert.Equal(2, value.Count());
     }
 
@@ -209,7 +213,7 @@ public class MealPlanControllerTests
         var start = DateTime.UtcNow;
         var end = DateTime.UtcNow.AddDays(7);
         _mealPlanService.Setup(s => s.GetMealPlansByDateRangeAsync(UserId, start, end))
-            .ReturnsAsync(Result<IEnumerable<MealPlanDto>>.Failure(MealPlanErrors.InvalidInput));
+            .ReturnsAsync(Result<IEnumerable<PlanMealResponse>>.Failure(MealPlanErrors.InvalidInput));
 
         var result = await _controller.GetMealPlansForDateRange(start, end);
 
@@ -221,23 +225,24 @@ public class MealPlanControllerTests
     [Fact]
     public async Task UpdateMealPlan_ExistingPlan_Returns200WithMealPlan()
     {
-        var updateDto = new MealPlanUpdateDto(1, 10, 1, DateTime.UtcNow, null, UserId);
+        var mealPlanId = Guid.NewGuid();
+        var updateDto = new UpdatePlanMealRequest(mealPlanId, SampleMealId, Guid.NewGuid(), DateTime.UtcNow, null, UserId);
         _mealPlanService.Setup(s => s.UpdateMealPlanAsync(UserId, updateDto))
-            .ReturnsAsync(Result<MealPlanDto>.Success(MakeMealPlan(1)));
+            .ReturnsAsync(Result<PlanMealResponse>.Success(MakeMealPlan(mealPlanId)));
 
         var result = await _controller.UpdateMealPlan(updateDto);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsType<MealPlanDto>(ok.Value);
-        Assert.Equal(1, value.Id);
+        var value = Assert.IsType<PlanMealResponse>(ok.Value);
+        Assert.Equal(mealPlanId, value.Id);
     }
 
     [Fact]
     public async Task UpdateMealPlan_NonExistentPlan_Returns400()
     {
-        var updateDto = new MealPlanUpdateDto(999, 10, 1, DateTime.UtcNow, null, UserId);
+        var updateDto = new UpdatePlanMealRequest(Guid.NewGuid(), SampleMealId, Guid.NewGuid(), DateTime.UtcNow, null, UserId);
         _mealPlanService.Setup(s => s.UpdateMealPlanAsync(UserId, updateDto))
-            .ReturnsAsync(Result<MealPlanDto>.Failure(MealPlanErrors.UnableToUpdate));
+            .ReturnsAsync(Result<PlanMealResponse>.Failure(MealPlanErrors.UnableToUpdate));
 
         var result = await _controller.UpdateMealPlan(updateDto);
 
@@ -249,10 +254,11 @@ public class MealPlanControllerTests
     [Fact]
     public async Task DeleteMealPlan_ExistingPlan_Returns200()
     {
-        _mealPlanService.Setup(s => s.DeleteMealPlanAsync(UserId, 1))
+        var mealPlanId = Guid.NewGuid();
+        _mealPlanService.Setup(s => s.DeleteMealPlanAsync(UserId, mealPlanId))
             .ReturnsAsync(Result<bool>.Success(true));
 
-        var result = await _controller.DeleteMealPlan(1);
+        var result = await _controller.DeleteMealPlan(mealPlanId);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         Assert.Equal(true, ok.Value);
@@ -261,10 +267,11 @@ public class MealPlanControllerTests
     [Fact]
     public async Task DeleteMealPlan_NonExistentPlan_Returns400()
     {
-        _mealPlanService.Setup(s => s.DeleteMealPlanAsync(UserId, 999))
+        var mealPlanId = Guid.NewGuid();
+        _mealPlanService.Setup(s => s.DeleteMealPlanAsync(UserId, mealPlanId))
             .ReturnsAsync(Result<bool>.Failure(MealPlanErrors.UnableToDelete));
 
-        var result = await _controller.DeleteMealPlan(999);
+        var result = await _controller.DeleteMealPlan(mealPlanId);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
@@ -274,25 +281,27 @@ public class MealPlanControllerTests
     [Fact]
     public async Task AddMealItemToPlan_ValidItem_Returns200WithMealItemPlan()
     {
-        var createDto = new MealItemPlanCreateDto(1, 5, null, null, ItemStatus.Pending, null);
-        _mealPlanService.Setup(s => s.AddMealItemToPlanAsync(UserId, 1, createDto))
-            .ReturnsAsync(Result<MealItemPlanDto?>.Success(MakeMealItemPlan(1, 1)));
+        var mealPlanId = Guid.NewGuid();
+        var createDto = new CreatePlanMealItemRequest(mealPlanId, SampleMealItemId, null, null, null, "Pending", null);
+        var expected = MakeMealItemPlan(mealPlanId: mealPlanId);
+        _mealPlanService.Setup(s => s.AddMealItemToPlanAsync(UserId, mealPlanId, createDto))
+            .ReturnsAsync(Result<PlanMealItemResponse?>.Success(expected));
 
-        var result = await _controller.AddMealItemToPlan(1, createDto);
+        var result = await _controller.AddMealItemToPlan(mealPlanId, createDto);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsType<MealItemPlanDto>(ok.Value);
-        Assert.Equal(1, value.Id);
+        Assert.IsType<PlanMealItemResponse>(ok.Value);
     }
 
     [Fact]
     public async Task AddMealItemToPlan_ServiceFailure_Returns400()
     {
-        var createDto = new MealItemPlanCreateDto(999, 5, null, null, null, null);
-        _mealPlanService.Setup(s => s.AddMealItemToPlanAsync(UserId, 999, createDto))
-            .ReturnsAsync(Result<MealItemPlanDto?>.Failure(MealPlanErrors.UnableToCreate));
+        var mealPlanId = Guid.NewGuid();
+        var createDto = new CreatePlanMealItemRequest(mealPlanId, SampleMealItemId, null, null, null, "Pending", null);
+        _mealPlanService.Setup(s => s.AddMealItemToPlanAsync(UserId, mealPlanId, createDto))
+            .ReturnsAsync(Result<PlanMealItemResponse?>.Failure(MealPlanErrors.UnableToCreate));
 
-        var result = await _controller.AddMealItemToPlan(999, createDto);
+        var result = await _controller.AddMealItemToPlan(mealPlanId, createDto);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
@@ -302,24 +311,26 @@ public class MealPlanControllerTests
     [Fact]
     public async Task GetMealItemsForPlan_ExistingPlan_Returns200WithMealItems()
     {
-        var items = new List<MealItemPlanDto> { MakeMealItemPlan(1, 1), MakeMealItemPlan(2, 1) };
-        _mealPlanService.Setup(s => s.GetMealItemsForMealPlanAsync(UserId, 1))
-            .ReturnsAsync(Result<IEnumerable<MealItemPlanDto>>.Success(items));
+        var mealPlanId = Guid.NewGuid();
+        var items = new List<PlanMealItemResponse> { MakeMealItemPlan(mealPlanId: mealPlanId), MakeMealItemPlan(mealPlanId: mealPlanId) };
+        _mealPlanService.Setup(s => s.GetMealItemsForMealPlanAsync(UserId, mealPlanId))
+            .ReturnsAsync(Result<IEnumerable<PlanMealItemResponse>>.Success(items));
 
-        var result = await _controller.GetMealItemsForPlan(1);
+        var result = await _controller.GetMealItemsForPlan(mealPlanId);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsAssignableFrom<IEnumerable<MealItemPlanDto>>(ok.Value);
+        var value = Assert.IsAssignableFrom<IEnumerable<PlanMealItemResponse>>(ok.Value);
         Assert.Equal(2, value.Count());
     }
 
     [Fact]
     public async Task GetMealItemsForPlan_NonExistentPlan_Returns404()
     {
-        _mealPlanService.Setup(s => s.GetMealItemsForMealPlanAsync(UserId, 999))
-            .ReturnsAsync(Result<IEnumerable<MealItemPlanDto>>.Failure(MealPlanErrors.MealPlanNotFound));
+        var mealPlanId = Guid.NewGuid();
+        _mealPlanService.Setup(s => s.GetMealItemsForMealPlanAsync(UserId, mealPlanId))
+            .ReturnsAsync(Result<IEnumerable<PlanMealItemResponse>>.Failure(MealPlanErrors.MealPlanNotFound));
 
-        var result = await _controller.GetMealItemsForPlan(999);
+        var result = await _controller.GetMealItemsForPlan(mealPlanId);
 
         Assert.IsType<NotFoundObjectResult>(result);
     }
@@ -329,25 +340,31 @@ public class MealPlanControllerTests
     [Fact]
     public async Task UpdateMealItemInPlan_ExistingItem_Returns200WithUpdatedItem()
     {
-        var updateDto = new MealItemPlanUpdateDto(1, 1, 5, null, null, ItemStatus.Confirmed, null);
-        _mealPlanService.Setup(s => s.UpdateMealItemInPlanAsync(UserId, 1, 5, updateDto))
-            .ReturnsAsync(Result<MealItemPlanDto>.Success(MakeMealItemPlan(1, 1)));
+        var mealPlanId = Guid.NewGuid();
+        var mealItemId = Guid.NewGuid();
+        var itemId = Guid.NewGuid();
+        var updateDto = new UpdatePlanMealItemRequest(itemId, mealPlanId, mealItemId, null, null, null, "Confirmed", null);
+        var expected = MakeMealItemPlan(itemId, mealPlanId);
+        _mealPlanService.Setup(s => s.UpdateMealItemInPlanAsync(UserId, mealPlanId, mealItemId, updateDto))
+            .ReturnsAsync(Result<PlanMealItemResponse>.Success(expected));
 
-        var result = await _controller.UpdateMealItemInPlan(1, 5, updateDto);
+        var result = await _controller.UpdateMealItemInPlan(mealPlanId, mealItemId, updateDto);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsType<MealItemPlanDto>(ok.Value);
-        Assert.Equal(1, value.Id);
+        var value = Assert.IsType<PlanMealItemResponse>(ok.Value);
+        Assert.Equal(itemId, value.Id);
     }
 
     [Fact]
     public async Task UpdateMealItemInPlan_NonExistentItem_Returns400()
     {
-        var updateDto = new MealItemPlanUpdateDto(999, 1, 5, null, null, null, null);
-        _mealPlanService.Setup(s => s.UpdateMealItemInPlanAsync(UserId, 1, 5, updateDto))
-            .ReturnsAsync(Result<MealItemPlanDto>.Failure(MealPlanErrors.UnableToUpdate));
+        var mealPlanId = Guid.NewGuid();
+        var mealItemId = Guid.NewGuid();
+        var updateDto = new UpdatePlanMealItemRequest(Guid.NewGuid(), mealPlanId, mealItemId, null, null, null, "Confirmed", null);
+        _mealPlanService.Setup(s => s.UpdateMealItemInPlanAsync(UserId, mealPlanId, mealItemId, updateDto))
+            .ReturnsAsync(Result<PlanMealItemResponse>.Failure(MealPlanErrors.UnableToUpdate));
 
-        var result = await _controller.UpdateMealItemInPlan(1, 5, updateDto);
+        var result = await _controller.UpdateMealItemInPlan(mealPlanId, mealItemId, updateDto);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
@@ -357,10 +374,11 @@ public class MealPlanControllerTests
     [Fact]
     public async Task RemoveMealItemFromPlan_ExistingItem_Returns200()
     {
-        _mealPlanService.Setup(s => s.RemoveMealItemFromPlanAsync(UserId, 1))
+        var mealItemPlanId = Guid.NewGuid();
+        _mealPlanService.Setup(s => s.RemoveMealItemFromPlanAsync(UserId, mealItemPlanId))
             .ReturnsAsync(Result<bool>.Success(true));
 
-        var result = await _controller.RemoveMealItemFromPlan(1);
+        var result = await _controller.RemoveMealItemFromPlan(mealItemPlanId);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         Assert.Equal(true, ok.Value);
@@ -369,10 +387,11 @@ public class MealPlanControllerTests
     [Fact]
     public async Task RemoveMealItemFromPlan_NonExistentItem_Returns400()
     {
-        _mealPlanService.Setup(s => s.RemoveMealItemFromPlanAsync(UserId, 999))
+        var mealItemPlanId = Guid.NewGuid();
+        _mealPlanService.Setup(s => s.RemoveMealItemFromPlanAsync(UserId, mealItemPlanId))
             .ReturnsAsync(Result<bool>.Failure(MealPlanErrors.UnableToDelete));
 
-        var result = await _controller.RemoveMealItemFromPlan(999);
+        var result = await _controller.RemoveMealItemFromPlan(mealItemPlanId);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }

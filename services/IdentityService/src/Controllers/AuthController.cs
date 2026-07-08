@@ -66,7 +66,7 @@ public class AuthController : BaseController
             return HandleResult(Result<LoginResponse>.Failure(UserErrors.UserPasswordValidationFailed));
         }
 
-        var user = await _userService.CreateUserAsync(new CreateUserDto(Email: request.Email, Password: request.Password, DisplayName: request.DisplayName));
+        var user = await _userService.CreateUserAsync(new CreateUserRequest(Email: request.Email, Password: request.Password, DisplayName: request.DisplayName));
         return user.IsSuccess ? await IssueTokens(user.Value!.Id, user.Value.Email) : BadRequest();
     }
 

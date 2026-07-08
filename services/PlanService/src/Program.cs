@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PlanService.Repositories;
 using PlanService.Interfaces;
 using PlanService.Services;
-using PlanService.Clients;
+ 
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,19 +47,25 @@ builder.Services.AddAuthentication(options =>
 });
 //repositories
 builder.Services.AddScoped<IPlanRepository, PlanRepository>();
-builder.Services.AddScoped<IPlanShareRepository, PlanShareRepository>();
+builder.Services.AddScoped<IResourcePermissionRepository, ResourcePermissionRepository>();
+builder.Services.AddScoped<ICachedUserRepository, CachedUserRepository>();
+builder.Services.AddScoped<ICachedGroupRepository, CachedGroupRepository>();
+builder.Services.AddScoped<IResourceTypeRepository, ResourceTypeRepository>();
+builder.Services.AddScoped<ISubjectTypeRepository, SubjectTypeRepository>();
+builder.Services.AddScoped<IPermissionTypeRepository,PermissionTypeRepository>();
+builder.Services.AddScoped<IPlanMealItemStatusTypeRepository, MealItemPlanStatusTypeRepository>();
 builder.Services.AddScoped<IMealPlanRepository, MealPlanRepository>();
 builder.Services.AddScoped<IMealItemPlanRepository, MealItemPlanRepository>();
 //services
 builder.Services.AddScoped<IPlanningService, PlanningService>();
 builder.Services.AddScoped<IMealPlanService, MealPlanService>();
+builder.Services.AddScoped<IAccessService,AccessService>();
 // HTTP clients
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<IIdentityServiceClient, IdentityServiceClient>();
-
+ 
 //Database
 var conn = builder.Configuration.GetConnectionString("Postgres");
-builder.Services.AddDbContext<PlanContext>(options=>options.UseNpgsql(conn));
+builder.Services.AddDbContext<PlanDbContext>(options=>options.UseNpgsql(conn));
 
 var app = builder.Build();
 

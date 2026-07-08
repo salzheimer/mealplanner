@@ -3,9 +3,9 @@ using  PlanService.Models;
 namespace PlanService.Interfaces; 
 public interface IMealItemPlanRepository
 {
-    Task<MealItemPlan?> GetByIdAsync(int mealItemPlanId);
-    Task<MealItemPlan?> AddMealItemToMealPlanAsync(MealItemPlan mealItemPlan);
-    Task<IEnumerable<MealItemPlan>> GetMealItemsForMealPlanAsync(int planId);
-    Task<bool> RemoveMealItemFromMealPlanAsync(int mealItemPlanId);
-    Task<bool> UpdateMealItemInMealPlanAsync(MealItemPlan mealItemPlan);
+    Task<PlanMealItem?> GetByIdAsync(Guid mealItemPlanId);
+    Task<PlanMealItem?> AddMealItemToMealPlanAsync(PlanMealItem mealItemPlan);
+    Task<IEnumerable<PlanMealItem>> GetMealItemsForMealPlanAsync(Guid planId);
+    Task<bool> RemoveMealItemFromMealPlanAsync(Guid mealItemPlanId);
+    Task<bool> UpdateMealItemInMealPlanAsync(PlanMealItem mealItemPlan);
 }

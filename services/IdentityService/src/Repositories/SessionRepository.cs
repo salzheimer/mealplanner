@@ -6,9 +6,9 @@ namespace IdentityService.Repositories;
 
 public class SessionRepository : ISessionRepository
 {
-    private readonly UserContext _context;
+    private readonly IdentityDbContext _context;
 
-    public SessionRepository(UserContext context)
+    public SessionRepository(IdentityDbContext context)
     {
         _context = context;
     }

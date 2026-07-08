@@ -4,9 +4,9 @@ using IdentityService.Models;
 namespace IdentityService.Repositories;
 public partial class UserCredentialsRepository:Interfaces.IUserCredentialsRepository
 {
-     private readonly UserContext _context;
+     private readonly IdentityDbContext _context;
 
-    public UserCredentialsRepository(UserContext context)
+    public UserCredentialsRepository(IdentityDbContext context)
     {
         _context = context;
     }

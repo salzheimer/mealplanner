@@ -273,5 +273,23 @@ COMMENT ON COLUMN cached_groups.group_id IS 'The unique identifier for the group
 COMMENT ON COLUMN cached_groups.group_name IS 'The name of the group, used for showing group information in the UI without needing to query the Identity DB';
 COMMENT ON COLUMN cached_groups.synced_at IS 'The timestamp when the group information was last synced with the Identity DB, allowing for tracking of data freshness and determining when to refresh the cache';
 
+CREATE Table IF NOT EXISTS cached_group_members(
+    cached_group_member_id          UUID PRIMARY KEY,   -- The exact UUID from Identity DB
+    user_id                         UUID,               -- The exact UUID from Identity DB
+    group_id                        UUID,               -- The exact UUID from Identity DB
+    role_id                         INTEGER,
+    role_name                       TEXT,
+    status_id                       INTEGER,
+    status_name                     TEXT,
+    synced_at                       TIMESTAMP NOT NULL DEFAULT CURRENT_TIME
 
-
+);
+COMMENT ON TABLE cached_group_members IS 'Caches group member information from the Identity DB to optimize performance and reduce cross-database queries';
+COMMENT ON COLUMN cached_group_members.cached_group_member_id IS 'The unique identifier for the group member, matching the UUID from the Identity DB';
+COMMENT ON COLUMN cached_group_members.user_id IS 'The unique identifier for the user, matching the UUID from the Identity DB';
+COMMENT ON COLUMN cached_group_members.group_id IS 'The unique identifier for the group, matching the UUID from the Identity DB';
+COMMENT ON COLUMN cached_group_members.role_id IS 'The  identifier for the member role, matching the integer value from a lookup table in the Identity DB';
+COMMENT ON COLUMN cached_group_members.role_name IS 'The string value for the member role, matching the string value from a lookup table in the Identity DB';
+COMMENT ON COLUMN cached_group_members.status_id IS 'The identifier for the member status, matching the integer value from a lookup table in the Identity DB';
+COMMENT ON COLUMN cached_group_members.status_name IS 'The string value for the member status, matching the string value from a lookup table in the Identity DB';
+COMMENT ON COLUMN cached_group_members.synced_at IS 'The last time the cached value was synced from the Identity DB';

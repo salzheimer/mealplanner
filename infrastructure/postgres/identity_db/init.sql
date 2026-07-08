@@ -5,32 +5,32 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- lookup tables (replace enum types)
 
-CREATE TABLE IF NOT EXISTS group_member_roles (
+CREATE TABLE IF NOT EXISTS group_member_role_types (
     group_member_role_id INTEGER GENERATED ALWAYS AS IDENTITY  PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
     display_name TEXT NOT NULL,
     sort_order INTEGER NOT NULL DEFAULT 0
 );
 
-Comment on TABLE group_member_roles is 'reference table for defining the roles that users can have within a group. The ''owner'' role should have permissions to manage the group, including adding/removing members and changing member roles. The ''member'' role should have permissions to participate in the group but not manage it.';
-Comment on COLUMN group_member_roles.name is 'the name (text lookup) of the role, such as ''owner'' or ''member''.';
-Comment on COLUMN group_member_roles.display_name is 'the display name of the role, such as ''Owner'' or ''Member''.';
-Comment on COLUMN group_member_roles.sort_order is 'the sort order of the role, which can be used to determine the hierarchy of roles. For example, the ''owner'' role may have a sort order of 1, while the ''member'' role may have a sort order of 2 to indicate that it is a lower role than the owner.';    
-INSERT INTO group_member_roles (name, display_name, sort_order) VALUES
+Comment on TABLE group_member_role_types is 'reference table for defining the roles that users can have within a group. The ''owner'' role should have permissions to manage the group, including adding/removing members and changing member roles. The ''member'' role should have permissions to participate in the group but not manage it.';
+Comment on COLUMN group_member_role_types.name is 'the name (text lookup) of the role, such as ''owner'' or ''member''.';
+Comment on COLUMN group_member_role_types.display_name is 'the display name of the role, such as ''Owner'' or ''Member''.';
+Comment on COLUMN group_member_role_types.sort_order is 'the sort order of the role, which can be used to determine the hierarchy of roles. For example, the ''owner'' role may have a sort order of 1, while the ''member'' role may have a sort order of 2 to indicate that it is a lower role than the owner.';    
+INSERT INTO group_member_role_types (name, display_name, sort_order) VALUES
     ('owner', 'Owner', 1),
     ('member', 'Member', 2);
 
-CREATE TABLE IF NOT EXISTS group_member_statuses (
+CREATE TABLE IF NOT EXISTS group_member_status_types (
     group_member_status_id      INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name                        TEXT NOT NULL UNIQUE,
     display_name                TEXT NOT NULL,
     sort_order                  INTEGER NOT NULL DEFAULT 0
 );
-Comment on TABLE group_member_statuses is 'reference table for defining the statuses that users can have within a group. The ''pending'' status indicates that a user has been invited to join the group but has not yet accepted the invitation. The ''active'' status indicates that a user is an active member of the group. The ''removed'' status indicates that a user has been removed from the group and no longer has access to it.';
-Comment on COLUMN group_member_statuses.name is 'the name (text lookup) of the status, such as ''pending'', ''active'', or ''removed''.';
-Comment on COLUMN group_member_statuses.display_name is 'the display name of the status, such as ''Pending'', ''Active'', or ''Removed''.';
-Comment on COLUMN group_member_statuses.sort_order is 'the sort order of the status, which can be used to determine the progression of statuses. For example, the ''pending'' status may have a sort order of 1, the ''active'' status may have a sort order of 2, and the ''removed'' status may have a sort order of 3 to indicate that it is the final status in the progression.';
-INSERT INTO group_member_statuses (name, display_name, sort_order) VALUES
+Comment on TABLE group_member_status_types is 'reference table for defining the statuses that users can have within a group. The ''pending'' status indicates that a user has been invited to join the group but has not yet accepted the invitation. The ''active'' status indicates that a user is an active member of the group. The ''removed'' status indicates that a user has been removed from the group and no longer has access to it.';
+Comment on COLUMN group_member_status_types.name is 'the name (text lookup) of the status, such as ''pending'', ''active'', or ''removed''.';
+Comment on COLUMN group_member_status_types.display_name is 'the display name of the status, such as ''Pending'', ''Active'', or ''Removed''.';
+Comment on COLUMN group_member_status_types.sort_order is 'the sort order of the status, which can be used to determine the progression of statuses. For example, the ''pending'' status may have a sort order of 1, the ''active'' status may have a sort order of 2, and the ''removed'' status may have a sort order of 3 to indicate that it is the final status in the progression.';
+INSERT INTO group_member_status_types (name, display_name, sort_order) VALUES
     ('pending', 'Pending', 1),
     ('active', 'Active', 2),
     ('removed', 'Removed', 3);
@@ -102,16 +102,17 @@ CREATE TABLE IF NOT EXISTS group_members (
     group_member_id             UUID PRIMARY KEY,
     user_id                     UUID NOT NULL REFERENCES users(user_id),
     group_id                    UUID NOT NULL REFERENCES groups(group_id),
-    role_id                     INTEGER NOT NULL DEFAULT 2 REFERENCES group_member_roles(group_member_role_id),
+    role_id                     INTEGER NOT NULL DEFAULT 2 REFERENCES group_member_role_types(group_member_role_id),
     invited_by_user_id          UUID REFERENCES users(user_id),
     invited_at                  TIMESTAMP WITH TIME ZONE,
     joined_at                   TIMESTAMP WITH TIME ZONE,
-    status_id                   INTEGER NOT NULL DEFAULT 1 REFERENCES group_member_statuses(group_member_status_id)
+    remove_at                   TIMESTAMP WITH TIME ZONE,
+    status_id                   INTEGER NOT NULL DEFAULT 1 REFERENCES group_member_status_types(group_member_status_id)
 );
 COMMENT ON TABLE group_members IS 'the group_members table that manages the membership of users in groups, including their roles and statuses within the group. This table allows for flexible management of group memberships and permissions.';
 COMMENT ON COLUMN group_members.user_id IS 'the ID of the user who is a member of the group. This field references the users table to establish a relationship between users and groups.';
 COMMENT ON COLUMN group_members.group_id IS 'the ID of the group that the user is a member of. This field references the groups table to establish a relationship between users and groups.';
-COMMENT ON COLUMN group_members.role_id IS 'the ID of the role that the user has within the group. This field references the group_member_roles table to define the permissions and capabilities of the user within the group. The default role is set to 2, which corresponds to the "member" role.';
+COMMENT ON COLUMN group_members.role_id IS 'the ID of the role that the user has within the group. This field references the group_member_role_types table to define the permissions and capabilities of the user within the group. The default role is set to 2, which corresponds to the "member" role.';
 COMMENT ON COLUMN group_members.invited_by_user_id IS 'the ID of the user who invited the member to join the group. This field references the users table and can be used for auditing and tracking purposes to identify who is responsible for inviting members to groups.';
 COMMENT ON COLUMN group_members.invited_at IS 'the timestamp of when the user was invited to join the group. This can be used for auditing and tracking purposes, as well as for managing invitations and determining how long a user has been invited to a group.';    
 -- user credentials

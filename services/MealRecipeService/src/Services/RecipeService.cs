@@ -1,4 +1,4 @@
-using MealRecipeService.Clients;
+ 
 using MealRecipeService.Contracts;
 using MealRecipeService.Models;
 using MealRecipeService.Interfaces;

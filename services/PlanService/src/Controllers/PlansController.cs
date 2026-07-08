@@ -25,7 +25,7 @@ public class PlansController : BaseController
         var authenticatedUserId = GetAuthenticatedUserId();
         if (authenticatedUserId == null)
         {
-            return HandleResult(Result<IEnumerable<PlanSummaryDto>?>.Failure(PlanErrors.Unauthorized));
+            return HandleResult(Result<IEnumerable<PlanSummaryResponse>?>.Failure(PlanErrors.Unauthorized));
         }
         var result = HandleResult(await _planningService.GetPlansForUserAsync(authenticatedUserId.Value));
         return result;
@@ -38,7 +38,7 @@ public class PlansController : BaseController
         var authenticatedUserId = GetAuthenticatedUserId();
         if (authenticatedUserId == null)
         {
-            return HandleResult(Result<IEnumerable<PlanSummaryDto>?>.Failure(PlanErrors.Unauthorized));
+            return HandleResult(Result<IEnumerable<PlanSummaryResponse>?>.Failure(PlanErrors.Unauthorized));
         }
         var result = HandleResult(await _planningService.GetPlansByStartDateAsync(authenticatedUserId.Value, startDate));
         return result;
@@ -51,21 +51,21 @@ public class PlansController : BaseController
         var userId = GetAuthenticatedUserId();
         if (userId == null)
         {
-            return HandleResult(Result<IEnumerable<PlanSummaryDto>?>.Failure(PlanErrors.Unauthorized));
+            return HandleResult(Result<IEnumerable<PlanSummaryResponse>?>.Failure(PlanErrors.Unauthorized));
         }
         var result = HandleResult(await _planningService.GetPlansByEndDateAsync(userId.Value, endDate));
         return result;
     }
 
 
-    [HttpGet("{id:int}")]
+    [HttpGet("{id:Guid}")]
 
-    public async Task<IActionResult> GetById(int id)
+    public async Task<IActionResult> GetById(Guid id)
     {
         var userId = GetAuthenticatedUserId();
         if (userId == null)
         {
-            return HandleResult(Result<PlanSummaryDto?>.Failure(PlanErrors.Unauthorized));
+            return HandleResult(Result<PlanSummaryResponse?>.Failure(PlanErrors.Unauthorized));
         }
         var result = HandleResult(await _planningService.GetPlanByIdAsync(userId.Value, id));
         return result;
@@ -79,7 +79,7 @@ public class PlansController : BaseController
         var userId = GetAuthenticatedUserId();
         if (userId == null)
         {
-            return HandleResult(Result<IEnumerable<PlanSummaryDto>?>.Failure(PlanErrors.Unauthorized));
+            return HandleResult(Result<IEnumerable<PlanSummaryResponse>?>.Failure(PlanErrors.Unauthorized));
         }
         var result = HandleResult(await _planningService.GetPlansByDateRangeAsync(userId.Value, startDate, endDate));
         return result;
@@ -90,40 +90,40 @@ public class PlansController : BaseController
     {
         var userId = GetAuthenticatedUserId();
         if (userId == null)
-            return HandleResult(Result<PlanSummaryDto>.Failure(PlanErrors.Unauthorized));
+            return HandleResult(Result<PlanSummaryResponse>.Failure(PlanErrors.Unauthorized));
 
         return HandleResult(await _planningService.GetPlansSharedWithMeAsync(userId.Value));
     }
     [HttpPost]
 
-    public async Task<IActionResult> CreatePlan([FromBody] PlanCreateDto plan)
+    public async Task<IActionResult> CreatePlan([FromBody] CreatePlanRequest plan)
     {
         var userId = GetAuthenticatedUserId();
         if (userId == null)
         {
-            return HandleResult(Result<PlanSummaryDto?>.Failure(PlanErrors.Unauthorized));
+            return HandleResult(Result<PlanSummaryResponse?>.Failure(PlanErrors.Unauthorized));
         }
 
         var result = HandleResult(await _planningService.CreatePlanAsync(userId.Value, plan));
         return result;
     }
 
-    [HttpPut("{planId:int}")]
+    [HttpPut("{planId:Guid}")]
 
-    public async Task<IActionResult> UpdatePlan(int planId, [FromBody] PlanUpdateDto plan)
+    public async Task<IActionResult> UpdatePlan(Guid planId, [FromBody] UpdatePlanRequest plan)
     {
         var userId = GetAuthenticatedUserId();
         if (userId == null)
         {
-            return HandleResult(Result<PlanSummaryDto?>.Failure(PlanErrors.Unauthorized));
+            return HandleResult(Result<PlanSummaryResponse?>.Failure(PlanErrors.Unauthorized));
         }
         var result = HandleResult(await _planningService.UpdatePlanAsync(userId.Value,planId, plan));
         return result;
     }
 
-    [HttpDelete("{id:int}")]
+    [HttpDelete("{id:Guid}")]
 
-    public async Task<IActionResult> DeletePlan(int id)
+    public async Task<IActionResult> DeletePlan(Guid id)
     {
         var userId = GetAuthenticatedUserId();
         if (userId == null)
@@ -136,65 +136,19 @@ public class PlansController : BaseController
 
     [HttpPost("shares")]
 
-    public async Task<IActionResult> CreatePlanShare([FromBody] PlanShareCreateDto planShare)
+    public async Task<IActionResult> SharePlan([FromBody] SharePlanRequest planShare)
     {
         var userId = GetAuthenticatedUserId();
         if (userId == null)
         {
-            return HandleResult(Result<PlanShareDto?>.Failure(PlanErrors.Unauthorized));
+            return HandleResult(Result<SharePlanResponse?>.Failure(PlanErrors.Unauthorized));
         }
-        var result = HandleResult(await _planningService.CreatePlanShareAsync(userId.Value, planShare));
+        var result = HandleResult(await _planningService.SharePlanAsync(userId.Value, planShare));
         return result;
     }
-    [HttpGet("{planId:int}/shares")]
+   
 
-    public async Task<IActionResult> GetPlanSharesByPlanId(int planId)
-    {
-        var userId = GetAuthenticatedUserId();
-        if (userId == null)
-        {
-            return HandleResult(Result<IEnumerable<PlanShareDto>?>.Failure(PlanErrors.Unauthorized));
-        }
-        var result = HandleResult(await _planningService.GetPlanSharesByPlanIdAsync(userId.Value, planId));
-        return result;
-    }
-    [HttpGet("plans-shared-by-user")]
-
-    public async Task<IActionResult> GetPlanSharesByUserId()
-    {
-        var userId = GetAuthenticatedUserId();
-        if (userId == null)
-        {
-            return HandleResult(Result<IEnumerable<PlanShareDto>?>.Failure(PlanErrors.Unauthorized));
-        }
-        var result = HandleResult(await _planningService.GetPlanSharesBySharedByUserIdAsync(userId.Value));
-        return result;
-    }
-    [HttpPut("{planId:int}/shares/{shareId:int}")]
-
-    public async Task<IActionResult> UpdatePlanShare(int shareId,[FromBody] PlanShareUpdateDto planShare)
-    {
-        var userId = GetAuthenticatedUserId();
-        if (userId == null)
-        {
-            return HandleResult(Result<PlanShareDto?>.Failure(PlanErrors.Unauthorized));
-        }
-        var result = HandleResult(await _planningService.UpdatePlanShareAsync(userId.Value, shareId,planShare));
-        return result;
-    }
-
-    [HttpDelete("{planId:int}/shares/{planShareId:int}")]
-
-    public async Task<IActionResult> DeletePlanShare(int planId, int planShareId)
-    {
-        var userId = GetAuthenticatedUserId();
-        if (userId == null)
-        {
-            return HandleResult(Result<bool>.Failure(PlanErrors.Unauthorized));
-        }
-        var result = HandleResult(await _planningService.DeletePlanShareAsync(userId.Value, planShareId));
-        return result;
-    }
+   
 
 
 }

@@ -48,15 +48,15 @@ public class LookupCache : ILookupCache
     public async Task RefreshAsync()
     {
         using var scope = _scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<UserContext>();
+        var context = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
 
         var clientTypes = await context.ClientType
             .ToDictionaryAsync(x => x.Name, x => x.Id);
 
-        var groupMemberRoles = await context.GroupMemberRoles
+        var groupMemberRoles = await context.GroupMemberRoleTypes
             .ToDictionaryAsync(x => x.Name, x => x.Id);
 
-        var groupMemberStatuses = await context.GroupMemberStatuses
+        var groupMemberStatuses = await context.GroupMemberStatusTypes
             .ToDictionaryAsync(x => x.Name, x => x.Id);
 
         _lock.EnterWriteLock();

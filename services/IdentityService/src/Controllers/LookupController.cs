@@ -13,13 +13,13 @@ public record LookupItemRequest(string Name, string DisplayName, int SortOrder);
 public class LookupController : BaseController
 {
     private readonly IClientTypeRepository _clientTypes;
-    private readonly IGroupMemberRoleRepository _groupMemberRoles;
-    private readonly IGroupMemberStatusRepository _groupMemberStatuses;
+    private readonly IGroupMemberRoleTypeRepository _groupMemberRoles;
+    private readonly IGroupMemberStatusTypeRepository _groupMemberStatuses;
 
     public LookupController(
         IClientTypeRepository clientTypes,
-        IGroupMemberRoleRepository groupMemberRoles,
-        IGroupMemberStatusRepository groupMemberStatuses)
+        IGroupMemberRoleTypeRepository groupMemberRoles,
+        IGroupMemberStatusTypeRepository groupMemberStatuses)
     {
         _clientTypes = clientTypes;
         _groupMemberRoles = groupMemberRoles;
@@ -64,7 +64,7 @@ public class LookupController : BaseController
     [HttpPost("group-member-roles")]
     public async Task<IActionResult> CreateGroupMemberRole([FromBody] LookupItemRequest request)
     {
-        var item = new GroupMemberRole { Name = request.Name, DisplayName = request.DisplayName, SortOrder = request.SortOrder };
+        var item = new GroupMemberRoleType { Name = request.Name, DisplayName = request.DisplayName, SortOrder = request.SortOrder };
         await _groupMemberRoles.CreateAsync(item);
         return CreatedAtAction(nameof(GetGroupMemberRoles), null);
     }
@@ -72,7 +72,7 @@ public class LookupController : BaseController
     [HttpPut("group-member-roles/{id:int}")]
     public async Task<IActionResult> UpdateGroupMemberRole(int id, [FromBody] LookupItemRequest request)
     {
-        var item = new GroupMemberRole { Id = id, Name = request.Name, DisplayName = request.DisplayName, SortOrder = request.SortOrder };
+        var item = new GroupMemberRoleType { Id = id, Name = request.Name, DisplayName = request.DisplayName, SortOrder = request.SortOrder };
         var affected = await _groupMemberRoles.UpdateAsync(item);
         return affected == 0 ? NotFound() : Ok();
     }
@@ -93,7 +93,7 @@ public class LookupController : BaseController
     [HttpPost("group-member-statuses")]
     public async Task<IActionResult> CreateGroupMemberStatus([FromBody] LookupItemRequest request)
     {
-        var item = new GroupMemberStatus { Name = request.Name, DisplayName = request.DisplayName, SortOrder = request.SortOrder };
+        var item = new GroupMemberStatusType { Name = request.Name, DisplayName = request.DisplayName, SortOrder = request.SortOrder };
         await _groupMemberStatuses.CreateAsync(item);
         return CreatedAtAction(nameof(GetGroupMemberStatuses), null);
     }
@@ -101,7 +101,7 @@ public class LookupController : BaseController
     [HttpPut("group-member-statuses/{id:int}")]
     public async Task<IActionResult> UpdateGroupMemberStatus(int id, [FromBody] LookupItemRequest request)
     {
-        var item = new GroupMemberStatus { Id = id, Name = request.Name, DisplayName = request.DisplayName, SortOrder = request.SortOrder };
+        var item = new GroupMemberStatusType { Id = id, Name = request.Name, DisplayName = request.DisplayName, SortOrder = request.SortOrder };
         var affected = await _groupMemberStatuses.UpdateAsync(item);
         return affected == 0 ? NotFound() : Ok();
     }

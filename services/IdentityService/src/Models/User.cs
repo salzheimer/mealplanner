@@ -6,25 +6,25 @@ namespace IdentityService.Models;
 [Table("users")]
 public class User
 {
-   public User(string email,string? displayName)
-    {
+//    public User(string email,string? displayName)
+//     {
         
-        this.DisplayName = displayName;
-        this.Email = email;
-        this.EmailVerified = false;
-        this.EmailVerifiedAt = null;
-        this.CreatedAt = DateTimeOffset.UtcNow;
-        this.UpdatedAt = DateTimeOffset.UtcNow;
-        this.LastLoginAt = null;
-        this.Auth0Id = null;
-        this.IsActive = true;
-        this.FailedLoginAttempts = 0;
-        this.LockedUntil = null;
-        this.TermsAcceptedAt = null;
-        this.TermsVersion = null;
-        this.SecurityStamp = Guid.NewGuid().ToString();
+//         this.DisplayName = displayName;
+//         this.Email = email;
+//         this.EmailVerified = false;
+//         this.EmailVerifiedAt = null;
+//         this.CreatedAt = DateTimeOffset.UtcNow;
+//         this.UpdatedAt = DateTimeOffset.UtcNow;
+//         this.LastLoginAt = null;
+//         this.Auth0Id = null;
+//         this.IsActive = true;
+//         this.FailedLoginAttempts = 0;
+//         this.LockedUntil = null;
+//         this.TermsAcceptedAt = null;
+//         this.TermsVersion = null;
+//         this.SecurityStamp = Guid.NewGuid().ToString();
          
-    } 
+//     } 
 //   public User(string Email,string password,string? DisplayName)
 //     {
         

@@ -216,7 +216,7 @@ public class RecipesController : BaseController
         var authenticatedUserId = GetAuthenticatedUserId();
         if (authenticatedUserId == null)
         {
-            return HandleResult(Result<ResourcePermissionDto>.Failure(RecipeErrors.Unauthorized));
+            return HandleResult(Result<ShareRecipeResponse>.Failure(RecipeErrors.Unauthorized));
         }
         return HandleResult(await _recipeService.ShareRecipeAsync(request));
     }

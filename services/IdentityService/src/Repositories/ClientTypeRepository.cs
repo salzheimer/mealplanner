@@ -7,10 +7,10 @@ namespace IdentityService.Repositories;
 
 public partial class ClientTypeRepository : Interfaces.IClientTypeRepository
 {
-    private readonly UserContext _context;
+    private readonly IdentityDbContext _context;
     private readonly ILookupCache _lookupCache;
 
-    public ClientTypeRepository(UserContext context, ILookupCache lookupCache)
+    public ClientTypeRepository(IdentityDbContext context, ILookupCache lookupCache)
     {
         _context = context;
         _lookupCache = lookupCache;
