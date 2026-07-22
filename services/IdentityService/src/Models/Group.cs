@@ -15,6 +15,8 @@ public class Group
     public Guid CreatedBy{get;set;}
     [Column("created_at")]
     public DateTimeOffset CreatedAt{get;set;}
+    [Column("updated_at")]
+    public DateTimeOffset UpdatedAt{get;set;}
 
     public ICollection<GroupMember> GroupMembers {get;set;}=[];
 }

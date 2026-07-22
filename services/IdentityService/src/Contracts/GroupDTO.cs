@@ -6,16 +6,22 @@ public record GroupResponse(
     Guid CreatedBy,
     DateTimeOffset CreatedAt
 );
-
-public record CreateGroupRequest(
-    
+public record GroupDetailResponse(
+    Guid GroupId,
     string Name,
-    Guid CreatedBy
-    
+    string? OwnerDisplayName,
+    Guid CreatedBy,
+    DateTimeOffset CreatedAt
+);
+public record CreateGroupRequest(
+
+    string Name
+   
+
 );
 public record UpdateGroupRequest(
     Guid GroupId,
-    string Name,
-    Guid CreatedBy
-    
+    string Name
+     
+
 );

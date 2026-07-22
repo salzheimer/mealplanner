@@ -24,7 +24,10 @@ public class GroupMemberRoleTypeRepository : Interfaces.IGroupMemberRoleTypeRepo
     {
         return await _context.GroupMemberRoleTypes.FirstOrDefaultAsync(r => r.Id == id);
     }
-
+    public async Task<GroupMemberRoleType?> GetByName(string name)
+    {
+       return await _context.GroupMemberRoleTypes.FirstOrDefaultAsync(r=>r.Name ==name);
+    }
     public async Task<int> CreateAsync(GroupMemberRoleType role)
     {
         _context.GroupMemberRoleTypes.Add(role);

@@ -1,9 +1,10 @@
 using System.IO.Pipelines;
 using IdentityService.Interfaces;
 using IdentityService.Models;
-using MassTransit;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration.UserSecrets;
+using Rebus.Bus;
 using Shared.Models;
 
 namespace IdentityService.Services;
@@ -14,12 +15,12 @@ public class UserService : IUserService
 
     private readonly IUserRepository _userRepository;
     private readonly IUserCredentialsRepository _credentialsRepository;
-    private readonly IPublishEndpoint _publishEndpoint;
-    public UserService(IUserRepository userRepository, IUserCredentialsRepository credentialsRepository, IPublishEndpoint publishEndpoint)
+    private readonly IBus _bus;
+    public UserService(IUserRepository userRepository, IUserCredentialsRepository credentialsRepository, IBus bus)
     {
         _userRepository = userRepository;
         _credentialsRepository = credentialsRepository;
-        _publishEndpoint = publishEndpoint;
+        _bus = bus;
     }
 
     public async Task<Result<UserResponse>> CreateUserAsync(CreateUserRequest createUserRequest)
@@ -30,6 +31,8 @@ public class UserService : IUserService
 
             DisplayName = createUserRequest.DisplayName,
             Email = createUserRequest.Email,
+            EmailVerified=false,
+            IsActive =true,
             CreatedAt = now,
             UpdatedAt = now,
         };
@@ -49,7 +52,7 @@ public class UserService : IUserService
 
         await _credentialsRepository.CreateCredentials(credential);
         //publish to Rabbit MQ
-        await _publishEndpoint.Publish(new UserChanged { UserId = newUser.Id, DisplayName = string.IsNullOrEmpty(newUser.DisplayName) ? string.Empty : newUser.DisplayName, Action = "Created" });
+        await _bus.Publish(new UserChanged { UserId = newUser.Id, DisplayName = string.IsNullOrEmpty(newUser.DisplayName) ? string.Empty : newUser.DisplayName, SourceUpdatedAt=now, Action = "Created" });
         var response = new UserResponse(user.Id, user.Email, String.IsNullOrEmpty(user.DisplayName) ? string.Empty : user.DisplayName);
         return Result<UserResponse>.Success(response);
     }
@@ -68,7 +71,7 @@ public class UserService : IUserService
 
         var dbUser = await _userRepository.GetUser(userProfileRequest.Id);
 
-        await _publishEndpoint.Publish(new UserChanged { UserId = dbUser!.Id, DisplayName = dbUser.DisplayName!, Action = "Updated" });
+        await _bus.Publish(new UserChanged { UserId = dbUser!.Id, DisplayName = dbUser.DisplayName!, SourceUpdatedAt=user.UpdatedAt, Action = "Updated" });
         return Result<UserResponse>.Success(new UserResponse(dbUser!.Id, dbUser.Email, dbUser.DisplayName!));
     }
     public async Task<Result<bool>> DeleteUserAsync(Guid userId)
@@ -76,7 +79,7 @@ public class UserService : IUserService
         var deleted = await _userRepository.Delete(userId);
         if (!deleted) return Result<bool>.Failure(UserErrors.DeleteFailed);
 
-        await _publishEndpoint.Publish(new UserChanged { UserId = userId, Action = "Deleted" });
+        await _bus.Publish(new UserChanged { UserId = userId, Action = "Deleted" });
         return Result<bool>.Success(true);
     }
     public async Task<Result<UserResponse>> FindByEmail(string email)
@@ -89,7 +92,20 @@ public class UserService : IUserService
         }
         return Result<UserResponse>.Success(new UserResponse(user.Id, user.Email, string.IsNullOrEmpty(user.DisplayName) ? string.Empty : user.DisplayName));
     }
+    public async Task<Result<IEnumerable<UserResponse>>> GetAllUsersAsync()
+    {
+        IEnumerable<UserResponse> userResponses = Enumerable.Empty<UserResponse>();
+        var users = await _userRepository.GetAllUsersAsync();
+        if (users.Any())
+        {
+            userResponses = users.Select(u =>
+                new UserResponse(Id: u.Id, Email: u.Email, DisplayName: string.IsNullOrEmpty(u.DisplayName) == false ? u.DisplayName : string.Empty)
 
+            );
+        }
+
+        return Result<IEnumerable<UserResponse>>.Success(userResponses);
+    }
     public async Task<Result<UserResponse>> FindById(Guid id)
     {
         var user = await _userRepository.GetUser(id);

@@ -9,15 +9,15 @@ public class GroupMemberRepository(IdentityDbContext context) : IGroupMemberRepo
     public async Task<GroupMember?> CreateGroupMemberAsync(GroupMember member)
     {
         context.GroupMembers.Add(member);
-       var result = await context.SaveChangesAsync();
-        if(result <=0) return null;
+        var result = await context.SaveChangesAsync();
+        if (result <= 0) return null;
         return member;
     }
 
     public async Task<bool> UpdateGroupMemberAsync(GroupMember member)
     {
         context.Entry(member).State = EntityState.Modified;
-        
+
         var result = await context.SaveChangesAsync();
         return result > 0;
     }
@@ -47,6 +47,7 @@ public class GroupMemberRepository(IdentityDbContext context) : IGroupMemberRepo
             .ToListAsync();
     }
 
+    // Used in syncing functions across the services
     public async Task<IEnumerable<GroupMember>> GetAllGroupMembersAsync()
     {
         return await context.GroupMembers

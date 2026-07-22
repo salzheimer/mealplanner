@@ -1,4 +1,5 @@
 using MealRecipeService.Models;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace MealRecipeService.Repositories;
@@ -10,26 +11,42 @@ public class CachedUserRepository : Interfaces.ICachedUserRepository
     {
         _context = context;
     }
-    
+    public async Task<bool> AnyAsync()
+    {
+        return await _context.CachedUsers.AnyAsync();
+    }
 
     public async Task<CachedUser?> GetByIdAsync(Guid id)
     {
         return await _context.CachedUsers.FindAsync(id);
     }
-     
-    public Task<CachedUser?> CreateAsync(CachedUser user)
+
+    public async Task<CachedUser?> CreateAsync(CachedUser user)
     {
-        throw new NotImplementedException("Create is not supported in CachedUserRepository");
+        _context.CachedUsers.Add(user);
+        var result = await _context.SaveChangesAsync();
+        if (result <= 0) return null;
+        return user;
     }
 
-    public Task<bool> UpdateAsync(CachedUser user)
+    public async Task<bool> UpdateAsync(CachedUser user)
     {
-        throw new NotImplementedException("Update is not supported in CachedUserRepository");
+        var result =  await _context.CachedUsers.Where(cu=>cu.Id ==user.Id)
+        .ExecuteUpdateAsync(s=>s.SetProperty(
+            cu=>cu.DisplayName, user.DisplayName
+        ).SetProperty(cu=> cu.SyncedAt, user.SyncedAt)
+        .SetProperty(cu=>cu.SourceUpdatedAt, user.SourceUpdatedAt));
+       // _context.Entry(user).State = EntityState.Modified;
+        //var result = await _context.SaveChangesAsync();
+        return result > 0;
     }
 
-    public Task<bool> DeleteAsync(Guid id)
+    public async Task<bool> DeleteAsync(Guid id)
     {
-        throw new NotImplementedException("Delete is not supported in CachedUserRepository");
+        var existing = await _context.CachedUsers.FindAsync(id);
+        if (existing == null) return false;
+        _context.CachedUsers.Remove(existing);
+        return await _context.SaveChangesAsync() > 0;
     }
 }
 
@@ -40,27 +57,86 @@ public class CachedGroupRepository : Interfaces.ICachedGroupRepository
     {
         _context = context;
     }
-    
+
 
     public async Task<CachedGroup?> GetByIdAsync(Guid id)
     {
         return await _context.CachedGroups.FindAsync(id);
     }
 
-     
-     
-    public Task<CachedGroup?> CreateAsync(CachedGroup group)
+    public async Task<bool> AnyAsync()
     {
-        throw new NotImplementedException("Create is not supported in CachedGroupRepository");
+        return await _context.CachedGroups.AnyAsync();
     }
 
-    public Task<bool> UpdateAsync(CachedGroup group)
+    public async Task<CachedGroup?> CreateAsync(CachedGroup group)
     {
-        throw new NotImplementedException("Update is not supported in CachedGroupRepository");
+        _context.CachedGroups.Add(group);
+        var result = await _context.SaveChangesAsync();
+        if (result <= 0) return null;
+        return group;
     }
 
-    public Task<bool> DeleteAsync(Guid id)
+    public async Task<bool> UpdateAsync(CachedGroup group)
     {
-        throw new NotImplementedException("Delete is not supported in CachedGroupRepository");
+        var result = await _context.CachedGroups.Where(cg=>cg.Id ==group.Id)
+        .ExecuteUpdateAsync(s=>s.SetProperty(
+            cg=>cg.GroupName, group.GroupName
+        ).SetProperty(cg=> cg.SyncedAt, group.SyncedAt)
+        .SetProperty(cg=>cg.SourceUpdatedAt, group.SourceUpdatedAt));
+       // _context.Entry(group).State = EntityState.Modified;
+       // var result = await _context.SaveChangesAsync();
+        return result > 0;
+    }
+
+    public async Task<bool> DeleteAsync(Guid id)
+    {
+        var existing = await _context.CachedGroups.FindAsync(id);
+        if (existing == null) return false;
+        _context.CachedGroups.Remove(existing);
+        return await _context.SaveChangesAsync() > 0;
+    }
+}
+
+public class CachedGroupMemberRepository : Interfaces.ICachedGroupMemberRepository
+{
+    private readonly MealRecipeDbContext _context;
+    public CachedGroupMemberRepository(MealRecipeDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<bool> AnyAsync()
+    {
+        return await _context.CachedGroupMembers.AnyAsync();
+    }
+    public async Task<CachedGroupMember?> GetByIdAsync(Guid id)
+    {
+        return await _context.CachedGroupMembers.FindAsync(id);
+    }
+
+
+
+    public async Task<CachedGroupMember?> CreateAsync(CachedGroupMember groupMember)
+    {
+        _context.CachedGroupMembers.Add(groupMember);
+        var result = await _context.SaveChangesAsync();
+        if (result <= 0) return null;
+        return groupMember;
+    }
+
+    public async Task<bool> UpdateAsync(CachedGroupMember groupMember)
+    {
+        _context.Entry(groupMember).State = EntityState.Modified;
+        var result = await _context.SaveChangesAsync();
+        return result > 0;
+    }
+
+    public async Task<bool> DeleteAsync(Guid id)
+    {
+        var existing = await _context.CachedGroupMembers.FindAsync(id);
+        if (existing == null) return false;
+        _context.CachedGroupMembers.Remove(existing);
+        return await _context.SaveChangesAsync() > 0;
     }
 }

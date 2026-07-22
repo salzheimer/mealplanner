@@ -25,4 +25,5 @@ public DbSet<MealRecipeService.Models.PermissionType> PermissionTypes { get; set
 //Cache identity sets
 public DbSet<MealRecipeService.Models.CachedUser> CachedUsers { get; set; }
 public DbSet<MealRecipeService.Models.CachedGroup> CachedGroups { get; set; }
+public DbSet<MealRecipeService.Models.CachedGroupMember> CachedGroupMembers { get; set; }
 }

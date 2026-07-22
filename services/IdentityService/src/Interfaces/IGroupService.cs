@@ -5,20 +5,21 @@ namespace IdentityService.Interfaces;
 
 public interface IGroupService
 {
-    Task<Result<GroupResponse>>GetGroup(Guid groupId);
-    Task<Result<GroupResponse>>AddGroup(CreateGroupRequest request);
-    Task<Result<GroupResponse>>UpdateGroup(UpdateGroupRequest request);
-    Task<Result<bool>>DeleteGroup(Guid groupId);
-    Task<Result<IEnumerable<GroupResponse>>>GetGroupsUserBelongs(Guid userId);
+    Task<Result<IEnumerable<GroupResponse>>> GetAllGroupsAsync();
+    Task<Result<GroupResponse>>GetGroup(Guid currentUserId,Guid groupId);
+    Task<Result<GroupResponse>>AddGroup(Guid currentUserId,CreateGroupRequest request);
+    Task<Result<GroupResponse>>UpdateGroup(Guid currentUserId,UpdateGroupRequest request);
+    Task<Result<bool>>DeleteGroup(Guid currentUserId,Guid groupId);
+    Task<Result<IEnumerable<GroupResponse>>>GetGroupsUserBelongs(Guid currentUserId,Guid userId);
 
     //Group Member
-    Task<Result<IEnumerable<GroupMemberSummaryResponse>>>GetGroupMembers(Guid groupId);
-    Task<Result<IEnumerable<GroupMemberResponse>>>GetAllGroupMembers();
-    Task<Result<GroupMemberResponse>>GetGroupMember(Guid userId, Guid groupId);
+    Task<Result<IEnumerable<GroupMemberSummaryResponse>>>GetGroupMembers(Guid currentUserId,Guid groupId);
+    Task<Result<IEnumerable<GroupMemberResponse>>>GetAllGroupMembersAsync();
+    Task<Result<GroupMemberResponse>>GetGroupMember(Guid currentUserId,Guid userId, Guid groupId);
 
-    Task<Result<GroupMemberResponse>>AddGroupMember(CreateGroupMemberRequest request);
-    Task<Result<GroupMemberResponse>>UpdateGroupMember(UpdateGroupMemberRequest request);
-    Task<Result<bool>>DeleteGroupMember(Guid groupMemberId);
+    Task<Result<GroupMemberResponse>>AddGroupMember(Guid currentUserId,CreateGroupMemberRequest request);
+    Task<Result<GroupMemberResponse>>UpdateGroupMember(Guid currentUserId,UpdateGroupMemberRequest request);
+    Task<Result<bool>>DeleteGroupMember(Guid currentUserId,Guid groupMemberId);
     
 
 }

@@ -1,4 +1,6 @@
-using MassTransit;
+using Rebus.Bus;
+using Rebus.Config;
+using Rebus.Routing.TypeBased;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Scalar.AspNetCore;
@@ -68,7 +70,9 @@ builder.Services.AddAuthentication(options =>
             logger.LogInformation("Token validated successfully for user {User}", context.Principal.Identity?.Name);
             return Task.CompletedTask;
         }
+        
     };
+    options.IncludeErrorDetails = true; 
 });
 
 var serviceApiKey = builder.Configuration["ServiceApiKey"] ?? "";
@@ -86,19 +90,18 @@ builder.Services.AddAuthorization(options =>
 });
 
 
-//RabbitMQ
-builder.Services.AddMassTransit(x =>
-{
-    x.UsingRabbitMq((ctx, cfg) =>
-    {
-        cfg.Host(builder.Configuration["RabbitMq:Host"], h =>
-        {
-            h.Username(builder.Configuration["RabbitMq:Username"]);
-            h.Password(builder.Configuration["RabbitMq:Password"]);
-        });
-    });
-});
-// In-memory user store
+//Rebus
+builder.Services.AddRebus(configure => configure
+    .Logging(l => l.Console())
+    .Transport(t => t.UseRabbitMq(
+        $"amqp://{builder.Configuration["RabbitMq:Username"]}:{builder.Configuration["RabbitMq:Password"]}@{builder.Configuration["RabbitMq:Host"]}",
+        "identity-service"))
+    .Routing(r => r.TypeBased())
+        );
+
+//AutoRegisterHandlers block:
+builder.Services.AutoRegisterHandlersFromAssemblyOf<Program>();
+
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserCredentialsRepository, UserCredentialsRepository>();
@@ -109,7 +112,7 @@ builder.Services.AddScoped<IGroupMemberRoleTypeRepository, GroupMemberRoleTypeRe
 builder.Services.AddScoped<IGroupMemberStatusTypeRepository, GroupMemberStatusTypeRepository>();
 builder.Services.AddScoped<IGroupRepository, GroupRepository>();
 builder.Services.AddScoped<IGroupMemberRepository, GroupMemberRepository>();
-builder.Services.AddScoped<IGroupService,GroupService>();
+builder.Services.AddScoped<IGroupService, GroupService>();
 builder.Services.AddSingleton<ILookupCache, LookupCache>();
 builder.Services.AddHostedService<LookupCacheWarmup>();
 
@@ -136,9 +139,9 @@ if (app.Environment.IsDevelopment())
     {
         options.WithTitle("Identity Service API");
         options.AddHttpAuthentication("Bearer", _ => { });
-         
+
     });
-    
+
 }
 
 app.Run();

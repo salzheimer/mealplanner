@@ -251,6 +251,45 @@ public class AuthControllerTests
         Assert.IsType<UnauthorizedObjectResult>(result);
     }
 
+    // --- Register: additional failure paths ---
+
+    [Fact]
+    public async Task Register_InvalidEmailFormat_Returns400()
+    {
+        var result = await _controller.Register(new RegisterRequest("not-an-email", "password123", null));
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Register_WeakPassword_Returns500()
+    {
+        _userService.Setup(s => s.FindByEmail("alice@example.com"))
+            .ReturnsAsync(Result<UserResponse>.Failure(UserErrors.NotFound));
+        _userService.Setup(s => s.ValidatePassword("weak"))
+            .ReturnsAsync(Result<string>.Failure(UserErrors.UserPasswordValidationFailed));
+
+        var result = await _controller.Register(new RegisterRequest("alice@example.com", "weak", null));
+
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, obj.StatusCode);
+    }
+
+    [Fact]
+    public async Task Register_UserCreationFails_Returns400()
+    {
+        _userService.Setup(s => s.FindByEmail("alice@example.com"))
+            .ReturnsAsync(Result<UserResponse>.Failure(UserErrors.NotFound));
+        _userService.Setup(s => s.ValidatePassword("password123"))
+            .ReturnsAsync(Result<string>.Success(""));
+        _userService.Setup(s => s.CreateUserAsync(It.IsAny<CreateUserRequest>()))
+            .ReturnsAsync(Result<UserResponse>.Failure(UserErrors.UpdateFailed));
+
+        var result = await _controller.Register(new RegisterRequest("alice@example.com", "password123", null));
+
+        Assert.IsType<BadRequestResult>(result);
+    }
+
     // --- Validate ---
 
     [Fact]
@@ -269,5 +308,30 @@ public class AuthControllerTests
         var result = await _controller.Validate(token);
 
         Assert.IsType<OkObjectResult>(result);
+    }
+
+    // --- CheckPassword ---
+
+    [Fact]
+    public async Task CheckPassword_ValidPassword_Returns200()
+    {
+        _userService.Setup(s => s.ValidatePassword("StrongPass1!"))
+            .ReturnsAsync(Result<string>.Success(""));
+
+        var result = await _controller.CheckPassword("StrongPass1!");
+
+        Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task CheckPassword_WeakPassword_Returns500()
+    {
+        _userService.Setup(s => s.ValidatePassword("weak"))
+            .ReturnsAsync(Result<string>.Failure(UserErrors.UserPasswordValidationFailed));
+
+        var result = await _controller.CheckPassword("weak");
+
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, obj.StatusCode);
     }
 }

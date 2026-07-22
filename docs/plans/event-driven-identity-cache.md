@@ -12,7 +12,8 @@ The goal is to have IdentityService publish events when identity data changes, a
 
 - `CachedUser`, `CachedGroup`, `CachedGroupMember` models exist in `MealRecipeService/src/Models/Cached.cs`
 - `CachedRepository.cs` exists but Create/Update/Delete throw `NotImplementedException`
-- No MassTransit or RabbitMQ packages in either service
+- `IdentityService.csproj` and `MealRecipeService.csproj` already reference `MassTransit`/`MassTransit.RabbitMQ` **9.1.2** — MassTransit went commercial starting with v9, so these references need to be **removed**, not just left unused. `IdentityService/src/Program.cs` already calls `AddMassTransit(...)`, and both `appsettings.json` files already have a `RabbitMq` config section — this plan replaces that wiring with Rebus rather than adding messaging from scratch
+- No `rabbitmq` service/volume in `docker-compose.yml` yet (Step 1 genuinely not started)
 - No events published anywhere in IdentityService
 - IdentityService has no C# models or repositories for `groups` or `group_members` (only lookup repos for roles/statuses)
 - Docker-compose has no message broker infrastructure
@@ -86,7 +87,7 @@ public record CacheSyncRequested
 }
 ```
 
-Use init-only properties rather than positional (primary constructor) form. MassTransit serializes by property name — init-only records allow adding optional properties in future without breaking existing consumers. Carry the full payload so consumers never need to call back to IdentityService on receipt.
+Use init-only properties rather than positional (primary constructor) form. Rebus's default JSON serialization works by property name — init-only records allow adding optional properties in future without breaking existing consumers. Carry the full payload so consumers never need to call back to IdentityService on receipt.
 
 ---
 
@@ -103,27 +104,23 @@ Map `GroupRepository` to the `groups` table and `GroupMemberRepository` to `grou
 
 ---
 
-### Step 4: Add MassTransit + Publishing to IdentityService
+### Step 4: Remove MassTransit, Add Rebus + Publishing to IdentityService
 
-**Packages:** `MassTransit`, `MassTransit.RabbitMQ`
+**Remove first:** `IdentityService.csproj` currently references `MassTransit`/`MassTransit.RabbitMQ` **9.1.2** (the commercial version) and `Program.cs` already calls `AddMassTransit(...)`. Remove both the package references and that block before adding Rebus — don't leave the commercial packages installed alongside the new ones.
 
-Configure MassTransit in `IdentityService/src/Program.cs`:
+**Packages (all MIT-licensed, free):** `Rebus`, `Rebus.RabbitMq`, `Rebus.ServiceProvider`
+
+Configure Rebus in `IdentityService/src/Program.cs`, reusing the existing `RabbitMq:*` config keys already in `appsettings.json`:
 
 ```csharp
-builder.Services.AddMassTransit(x =>
-{
-    x.UsingRabbitMq((ctx, cfg) =>
-    {
-        cfg.Host(builder.Configuration["RabbitMq:Host"], h =>
-        {
-            h.Username(builder.Configuration["RabbitMq:Username"]);
-            h.Password(builder.Configuration["RabbitMq:Password"]);
-        });
-    });
-});
+builder.Services.AddRebus(configure => configure
+    .Logging(l => l.Console())
+    .Transport(t => t.UseRabbitMq(
+        $"amqp://{builder.Configuration["RabbitMq:Username"]}:{builder.Configuration["RabbitMq:Password"]}@{builder.Configuration["RabbitMq:Host"]}",
+        "identity-service")));
 ```
 
-Inject `IPublishEndpoint` into `UserService` and publish after each mutating operation:
+Inject Rebus's `IBus` (not MassTransit's `IPublishEndpoint`) into `UserService` and publish after each mutating operation:
 
 - `CreateUserAsync` → publish `UserChanged(..., "Created")`
 - Any update path → publish `UserChanged(..., "Updated")`
@@ -148,18 +145,19 @@ Use EF Core's `AddOrUpdate` pattern or raw SQL upsert (`INSERT ... ON CONFLICT D
 
 ---
 
-### Step 6: Add MassTransit Consumers to MealRecipeService
+### Step 6: Remove MassTransit, Add Rebus Handlers to MealRecipeService
 
-**Packages:** `MassTransit`, `MassTransit.RabbitMQ`
+**Remove first:** `MealRecipeService.csproj` currently references `MassTransit`/`MassTransit.RabbitMQ` **9.1.2** even though `Program.cs` never calls `AddMassTransit` yet. Remove the package references.
 
-Create consumers in `MealRecipeService/src/Consumers/`:
+**Packages (all MIT-licensed, free):** `Rebus`, `Rebus.RabbitMq`, `Rebus.ServiceProvider`
+
+Create handlers in `MealRecipeService/src/Consumers/` (Rebus's handler interface is `IHandleMessages<T>`, not MassTransit's `IConsumer<T>`):
 
 ```csharp
-public class UserChangedConsumer : IConsumer<UserChanged>
+public class UserChangedHandler : IHandleMessages<UserChanged>
 {
-    public async Task Consume(ConsumeContext<UserChanged> context)
+    public async Task Handle(UserChanged msg)
     {
-        var msg = context.Message;
         if (msg.Action == "Deleted")
             await _cachedUserRepository.DeleteAsync(msg.UserId);
         else
@@ -168,9 +166,30 @@ public class UserChangedConsumer : IConsumer<UserChanged>
 }
 ```
 
-Add `GroupChangedConsumer` and `GroupMembershipChangedConsumer` following the same pattern.
+Add `GroupChangedHandler` and `GroupMembershipChangedHandler` following the same pattern.
 
-Configure MassTransit in `MealRecipeService/src/Program.cs` with all three consumers registered. MassTransit will create durable queues automatically — missed events while the service is down are replayed on reconnect.
+Configure Rebus in `MealRecipeService/src/Program.cs` with its own input queue, then auto-register handlers:
+
+```csharp
+builder.Services.AddRebus(configure => configure
+    .Logging(l => l.Console())
+    .Transport(t => t.UseRabbitMq(
+        $"amqp://{builder.Configuration["RabbitMq:Username"]}:{builder.Configuration["RabbitMq:Password"]}@{builder.Configuration["RabbitMq:Host"]}",
+        "meal-recipe-service")));
+builder.Services.AutoRegisterHandlersFromAssemblyOf<Program>();
+```
+
+Rebus creates durable RabbitMQ queues automatically, so missed events while the service is down are still replayed on reconnect — same guarantee MassTransit provided.
+
+**Important difference from MassTransit:** Rebus requires each subscriber to explicitly call `bus.Subscribe<TEvent>()` once at startup so RabbitMQ knows to route published events to that queue. MassTransit infers this topology automatically from registered consumers; Rebus does not. Add this to the startup hosted service in Step 7:
+
+```csharp
+await bus.Subscribe<UserChanged>();
+await bus.Subscribe<GroupChanged>();
+await bus.Subscribe<GroupMembershipChanged>();
+```
+
+Forgetting this means events silently never arrive at MealRecipeService — there's no error, the queue just never receives anything.
 
 ---
 
@@ -190,28 +209,32 @@ public class CacheSyncHostedService(IServiceScopeFactory scopeFactory, IBus bus)
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {
+        await bus.Subscribe<UserChanged>();
+        await bus.Subscribe<GroupChanged>();
+        await bus.Subscribe<GroupMembershipChanged>();
+
         using var scope = scopeFactory.CreateScope();
         var repo = scope.ServiceProvider.GetRequiredService<ICachedUserRepository>();
         if (!await repo.AnyAsync())
-            await bus.Publish(new CacheSyncRequested("MealRecipeService"), cancellationToken);
+            await bus.Publish(new CacheSyncRequested { RequestedBy = "MealRecipeService" });
     }
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }
 ```
 
 ```csharp
-// IdentityService — sync request consumer
-public class CacheSyncRequestedConsumer(IUserRepository users, IGroupRepository groups,
-    IGroupMemberRepository members, IPublishEndpoint publish) : IConsumer<CacheSyncRequested>
+// IdentityService — sync request handler
+public class CacheSyncRequestedHandler(IUserRepository users, IGroupRepository groups,
+    IGroupMemberRepository members, IBus bus) : IHandleMessages<CacheSyncRequested>
 {
-    public async Task Consume(ConsumeContext<CacheSyncRequested> context)
+    public async Task Handle(CacheSyncRequested message)
     {
         foreach (var user in await users.GetAllAsync())
-            await publish.Publish(new UserChanged(user.Id, user.DisplayName, "Created"));
+            await bus.Publish(new UserChanged { UserId = user.Id, DisplayName = user.DisplayName, Action = "Created" });
         foreach (var group in await groups.GetAllAsync())
-            await publish.Publish(new GroupChanged(group.Id, group.Name, "Created"));
+            await bus.Publish(new GroupChanged { GroupId = group.Id, GroupName = group.Name, Action = "Created" });
         foreach (var member in await members.GetAllAsync())
-            await publish.Publish(new GroupMembershipChanged(member.UserId, member.GroupId, member.RoleName, "Added"));
+            await bus.Publish(new GroupMembershipChanged { UserId = member.UserId, GroupId = member.GroupId, RoleName = member.RoleName, Action = "Added" });
     }
 }
 ```
@@ -230,16 +253,16 @@ This mechanism also serves as the cache rebuild path if the cache ever becomes s
 | `IdentityService/src/Repositories/GroupRepository.cs` | New |
 | `IdentityService/src/Services/GroupService.cs` | New — includes event publishing |
 | `IdentityService/src/Services/UserService.cs` | Add event publishing on mutating ops |
-| `IdentityService/src/Program.cs` | Register MassTransit, GroupRepository, GroupService |
-| `IdentityService/IdentityService.csproj` | Add MassTransit packages |
+| `IdentityService/src/Program.cs` | Remove `AddMassTransit`; register Rebus, GroupRepository, GroupService |
+| `IdentityService/IdentityService.csproj` | Remove MassTransit/MassTransit.RabbitMQ 9.1.2; add Rebus, Rebus.RabbitMq, Rebus.ServiceProvider |
 | `MealRecipeService/src/Repositories/CachedRepository.cs` | Implement write operations |
-| `MealRecipeService/src/Consumers/UserChangedConsumer.cs` | New |
-| `MealRecipeService/src/Consumers/GroupChangedConsumer.cs` | New |
-| `MealRecipeService/src/Consumers/GroupMembershipChangedConsumer.cs` | New |
-| `MealRecipeService/src/Program.cs` | Register MassTransit, consumers |
-| `MealRecipeService/MealRecipeService.csproj` | Add MassTransit packages |
-| `MealRecipeService/src/HostedServices/CacheSyncHostedService.cs` | New — publishes CacheSyncRequested on empty cache |
-| `IdentityService/src/Consumers/CacheSyncRequestedConsumer.cs` | New — re-publishes all current state as change events |
+| `MealRecipeService/src/Consumers/UserChangedHandler.cs` | New |
+| `MealRecipeService/src/Consumers/GroupChangedHandler.cs` | New |
+| `MealRecipeService/src/Consumers/GroupMembershipChangedHandler.cs` | New |
+| `MealRecipeService/src/Program.cs` | Register Rebus, auto-register handlers |
+| `MealRecipeService/MealRecipeService.csproj` | Remove MassTransit/MassTransit.RabbitMQ 9.1.2; add Rebus, Rebus.RabbitMq, Rebus.ServiceProvider |
+| `MealRecipeService/src/HostedServices/CacheSyncHostedService.cs` | New — subscribes to events, publishes CacheSyncRequested on empty cache |
+| `IdentityService/src/Consumers/CacheSyncRequestedHandler.cs` | New — re-publishes all current state as change events |
 
 ---
 
@@ -248,6 +271,6 @@ This mechanism also serves as the cache rebuild path if the cache ever becomes s
 1. Start the stack with `docker-compose up` — RabbitMQ management UI should be accessible at `http://localhost:15672`
 2. Create a user via IdentityService — verify a `cached_users` row appears in `meal_recipe_db`
 3. Add a user to a group — verify a `cached_group_members` row appears
-4. Stop MealRecipeService, create another user, restart MealRecipeService — verify the missed event is replayed and the cache is updated (MassTransit durable queue)
+4. Stop MealRecipeService, create another user, restart MealRecipeService — verify the missed event is replayed and the cache is updated (Rebus durable RabbitMQ queue)
 5. Wipe `cached_users` directly in the DB, restart MealRecipeService — verify `CacheSyncRequested` is published on startup and the cache repopulates via events
-6. Publish a `CacheSyncRequested` event manually via the RabbitMQ management UI — verify the cache rebuilds without a service restart
+6. Publish a `CacheSyncRequested` event manually via the RabbitMQ management UI — verify the cache rebuilds without a service restart. Note: Rebus wraps messages with its own headers (e.g. `rbs2-msg-type`) for deserialization, so a hand-typed message via the management UI must set those headers correctly to be picked up — otherwise prefer triggering this via a small test script/endpoint instead of the raw UI

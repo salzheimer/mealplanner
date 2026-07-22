@@ -6,6 +6,7 @@ public interface IGroupMemberStatusTypeRepository
 {
     Task<List<GroupMemberStatusType>> GetAllAsync();
     Task<GroupMemberStatusType?> GetByIdAsync(int id);
+    Task<GroupMemberStatusType?> GetByName(string name);
     Task<int> CreateAsync(GroupMemberStatusType status);
     Task<int> UpdateAsync(GroupMemberStatusType status);
     Task<int> DeleteAsync(int id);

@@ -18,7 +18,7 @@ public class GroupRepository(IdentityDbContext context) : IGroupRepository
 
     public async Task<bool> UpdateGroupAsync(Group group)
     {
-        context.Entry(group).State= EntityState.Modified;
+        context.Entry(group).State = EntityState.Modified;
         var result = await context.SaveChangesAsync();
         return result > 0;
     }
@@ -30,7 +30,7 @@ public class GroupRepository(IdentityDbContext context) : IGroupRepository
         context.Groups.Remove(existing);
         return await context.SaveChangesAsync() > 0;
     }
-
+    //Used in syncing functions across services
     public async Task<IEnumerable<Group>> GetAllGroupsAsync()
     {
         return await context.Groups.ToListAsync();

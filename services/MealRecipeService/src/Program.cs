@@ -1,10 +1,12 @@
-using Shared.Models;
+using Rebus.Config;
 using Scalar.AspNetCore;
 using Microsoft.EntityFrameworkCore;
- 
+using Shared.Models;
 using MealRecipeService.Repositories;
 using MealRecipeService.Services;
 using MealRecipeService.Interfaces;
+using MealRecipeService.HostedServices;
+using Rebus.Routing.TypeBased;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,6 +51,22 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+//Rebus
+builder.Services.AddRebus(configure => configure
+    .Logging(l => l.Console())
+    .Transport(t => t.UseRabbitMq(
+        $"amqp://{builder.Configuration["RabbitMq:Username"]}:{builder.Configuration["RabbitMq:Password"]}@{builder.Configuration["RabbitMq:Host"]}",
+        "meal-recipe-service"))
+    .Routing(r => r.TypeBased().Map<CacheSyncRequested>("identity-service"))
+        );
+
+//AutoRegisterHandlers block:
+builder.Services.AutoRegisterHandlersFromAssemblyOf<Program>();
+
+// Register the background service
+builder.Services.AddHostedService<CacheSyncHostedService>();
+
+
 // Repositories
 builder.Services.AddScoped<IRecipeRepository, RecipeRepository>();
 builder.Services.AddScoped<IRecipeIngredientRepository, RecipeIngredientRepository>();
@@ -62,18 +80,23 @@ builder.Services.AddScoped<ICachedUserRepository, CachedUserRepository>();
 builder.Services.AddScoped<ICachedGroupRepository, CachedGroupRepository>();
 builder.Services.AddScoped<IResourceTypeRepository, ResourceTypeRepository>();
 builder.Services.AddScoped<ISubjectTypeRepository, SubjectTypeRepository>();
-builder.Services.AddScoped<IPermissionTypeRepository,PermissionTypeRepository>();
+builder.Services.AddScoped<IPermissionTypeRepository, PermissionTypeRepository>();
+builder.Services.AddScoped<ICachedUserRepository, CachedUserRepository>();
+builder.Services.AddScoped<ICachedGroupRepository, CachedGroupRepository>();
+builder.Services.AddScoped<ICachedGroupMemberRepository, CachedGroupMemberRepository>();
+
 // Services
 builder.Services.AddScoped<IRecipeService, RecipeService>();
 builder.Services.AddScoped<IMealService, MealService>();
-builder.Services.AddScoped<IAccessService,AccessService>();
+builder.Services.AddScoped<IAccessService, AccessService>();
+builder.Services.AddScoped<ICachedService, CachedService>();
 // HTTP clients
 builder.Services.AddHttpContextAccessor();
- 
+
 
 //Database
 var conn = builder.Configuration.GetConnectionString("MealRecipe");
-builder.Services.AddDbContext<MealRecipeDbContext>(options=>options.UseNpgsql(conn));
+builder.Services.AddDbContext<MealRecipeDbContext>(options => options.UseNpgsql(conn));
 
 
 var app = builder.Build();
@@ -93,7 +116,7 @@ if (app.Environment.IsDevelopment())
     {
         options.WithTitle("Meal Recipe Service API");
         options.AddHttpAuthentication("Bearer", _ => { });
-         
+
     });
 }
 

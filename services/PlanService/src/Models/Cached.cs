@@ -7,7 +7,7 @@ namespace PlanService.Models;
 public class CachedUser
 {
     [Key]
-    [Column("cached_user_id")]
+    [Column("user_id")]
     public Guid Id { get; set; }
     [Column("display_name")]
     public string DisplayName { get; set; } = null!;
@@ -19,32 +19,33 @@ public class CachedUser
 public class CachedGroup
 {
     [Key]
-    [Column("cached_group_id")]
+    [Column("group_id")]
     public Guid Id { get; set; }
-    [Column("display_name")]
-    public string DisplayName { get; set; } = null!;
+    [Column("group_name")]
+    public string GroupName { get; set; } = null!;
     [Column("synced_at")]
     public DateTimeOffset SyncedAt { get; set; }
+    [Column("source_updated_at")]
+    public DateTimeOffset SourceUpdatedAt {get;set;}
 }
 
 [Table("cached_group_members")]
 public class CachedGroupMember
 {
     [Key]
-    [Column("cached_group_member_id")]
+    [Column("group_member_id")]
     public Guid Id { get; set; }
     [Column("user_id")]
     public Guid UserId { get; set; }
     [Column("group_id")]
     public Guid GroupId { get; set; }
-    [Column("role_id")]
-    public int RoleId { get; set; }
+   
     [Column("role_name")]
-    public string RoleName { get; set; }=string.Empty;
-    [Column("status_id")]
-    public int StatusId { get; set; }
+    public string RoleName { get; set; } =null!;
     [Column("status_name")]
-    public string StatusName { get; set; }=string.Empty;
+    public string StatusName { get; set; } =null!;
     [Column("synced_at")]
     public DateTimeOffset SyncedAt { get; set; }
+    [Column("source_updated_at")]
+    public DateTimeOffset SourceUpdatedAt {get;set;}
 }

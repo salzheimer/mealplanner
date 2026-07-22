@@ -62,8 +62,8 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at                  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     last_login_at               TIMESTAMP WITH TIME ZONE,
     auth0_id                    TEXT,
-    is_active                   BOOLEAN NOT NULL DEFAULT TRUE,
-    failed_login_attempts       INTEGER NOT NULL DEFAULT 0,
+    is_active                   BOOLEAN  DEFAULT TRUE,
+    failed_login_attempts       INTEGER DEFAULT 0,
     locked_until                TIMESTAMP WITH TIME ZONE,
     terms_accepted_at           TIMESTAMP WITH TIME ZONE,
     terms_version               TEXT,
@@ -90,7 +90,8 @@ CREATE TABLE IF NOT EXISTS groups (
     group_id                    UUID PRIMARY KEY,
     name                        VARCHAR(200) NOT NULL,
     created_by_user_id          UUID REFERENCES users(user_id),
-    created_at                  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at                  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at                  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 COMMENT ON TABLE groups IS 'the groups table that stores information about each group, including the group name and the user who created the group. This table is used to manage group memberships and permissions within the application.';
 COMMENT ON COLUMN groups.name IS 'the name of the group, which is used to identify the group within the application. The group name should be unique to avoid confusion between groups.';
@@ -106,7 +107,9 @@ CREATE TABLE IF NOT EXISTS group_members (
     invited_by_user_id          UUID REFERENCES users(user_id),
     invited_at                  TIMESTAMP WITH TIME ZONE,
     joined_at                   TIMESTAMP WITH TIME ZONE,
-    remove_at                   TIMESTAMP WITH TIME ZONE,
+    removed_at                  TIMESTAMP WITH TIME ZONE,
+    created_at                  TIMESTAMP WITH TIME ZONE,
+    updated_at                  TIMESTAMP WITH TIME ZONE,
     status_id                   INTEGER NOT NULL DEFAULT 1 REFERENCES group_member_status_types(group_member_status_id)
 );
 COMMENT ON TABLE group_members IS 'the group_members table that manages the membership of users in groups, including their roles and statuses within the group. This table allows for flexible management of group memberships and permissions.';

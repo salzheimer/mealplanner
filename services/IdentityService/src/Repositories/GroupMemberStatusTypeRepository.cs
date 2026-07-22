@@ -24,7 +24,10 @@ public class GroupMemberStatusTypeRepository : Interfaces.IGroupMemberStatusType
     {
         return await _context.GroupMemberStatusTypes.FirstOrDefaultAsync(s => s.Id == id);
     }
-
+    public async Task<GroupMemberStatusType?> GetByName(string name)
+    {
+        return await _context.GroupMemberStatusTypes.FirstOrDefaultAsync(r => r.Name == name);
+    }
     public async Task<int> CreateAsync(GroupMemberStatusType status)
     {
         _context.GroupMemberStatusTypes.Add(status);

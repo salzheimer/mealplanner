@@ -170,45 +170,46 @@ COMMENT ON COLUMN plan_meal_items.updated_by IS 'The user ID of the person who l
 
 -- cached identity data for performance optimization (denormalization)
 CREATE TABLE IF NOT EXISTS cached_users (
-    user_id             UUID PRIMARY KEY, -- The exact UUID from the Identity DB
-    display_name        VARCHAR(100) NOT NULL,
-    synced_at           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    user_id                 UUID PRIMARY KEY, -- The exact UUID from the Identity DB
+    display_name            VARCHAR(100) NOT NULL,
+    synced_at               TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    source_updated_at       TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 COMMENT ON TABLE cached_users IS 'Caches user information from the Identity DB to optimize performance and reduce cross-database queries';
 COMMENT ON COLUMN cached_users.user_id IS 'The unique identifier for the user, matching the UUID from the Identity DB';
 COMMENT ON COLUMN cached_users.display_name IS 'The display name of the user, used for showing user information in the UI without needing to query the Identity DB';
 COMMENT ON COLUMN cached_users.synced_at IS 'The timestamp when the user information was last synced with the Identity DB, allowing for tracking of data freshness and determining when to refresh the cache';
+COMMENT ON COLUMN cached_users.source_updated_at IS 'The timestamp when the user information was last updated in the Identity DB, allowing for tracking of data order,freshness and assist with pipeline health monitoring';
 
 CREATE TABLE IF NOT EXISTS cached_groups (
-    group_id             UUID PRIMARY KEY, -- The exact UUID from the Identity DB
-    group_name           VARCHAR(200) NOT NULL,
-    synced_at            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    group_id                UUID PRIMARY KEY, -- The exact UUID from the Identity DB
+    group_name              VARCHAR(200) NOT NULL,
+    synced_at               TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    source_updated_at       TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 COMMENT ON TABLE cached_groups IS 'Caches group information from the Identity DB to optimize performance and reduce cross-database queries';
 COMMENT ON COLUMN cached_groups.group_id IS 'The unique identifier for the group, matching the UUID from the Identity DB';
 COMMENT ON COLUMN cached_groups.group_name IS 'The name of the group, used for showing group information in the UI without needing to query the Identity DB';
 COMMENT ON COLUMN cached_groups.synced_at IS 'The timestamp when the group information was last synced with the Identity DB, allowing for tracking of data freshness and determining when to refresh the cache';
-
+COMMENT ON COLUMN cached_groups.source_updated_at IS 'The timestamp when the user information was last updated in the Identity DB, allowing for tracking of data order,freshness and assist with pipeline health monitoring';
 CREATE Table IF NOT EXISTS cached_group_members(
-    cached_group_member_id          UUID PRIMARY KEY,   -- The exact UUID from Identity DB
+    group_member_id                 UUID PRIMARY KEY,   -- The exact UUID from Identity DB
     user_id                         UUID,               -- The exact UUID from Identity DB
     group_id                        UUID,               -- The exact UUID from Identity DB
-    role_id                         INTEGER,
     role_name                       TEXT,
-    status_id                       INTEGER,
     status_name                     TEXT,
-    synced_at                       TIMESTAMP NOT NULL DEFAULT CURRENT_TIME
+    synced_at                       TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    source_updated_at               TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 
 );
 COMMENT ON TABLE cached_group_members IS 'Caches group member information from the Identity DB to optimize performance and reduce cross-database queries';
-COMMENT ON COLUMN cached_group_members.cached_group_member_id IS 'The unique identifier for the group member, matching the UUID from the Identity DB';
+COMMENT ON COLUMN cached_group_members.group_member_id IS 'The unique identifier for the group member, matching the UUID from the Identity DB';
 COMMENT ON COLUMN cached_group_members.user_id IS 'The unique identifier for the user, matching the UUID from the Identity DB';
 COMMENT ON COLUMN cached_group_members.group_id IS 'The unique identifier for the group, matching the UUID from the Identity DB';
-COMMENT ON COLUMN cached_group_members.role_id IS 'The  identifier for the member role, matching the integer value from a lookup table in the Identity DB';
 COMMENT ON COLUMN cached_group_members.role_name IS 'The string value for the member role, matching the string value from a lookup table in the Identity DB';
-COMMENT ON COLUMN cached_group_members.status_id IS 'The identifier for the member status, matching the integer value from a lookup table in the Identity DB';
 COMMENT ON COLUMN cached_group_members.status_name IS 'The string value for the member status, matching the string value from a lookup table in the Identity DB';
 COMMENT ON COLUMN cached_group_members.synced_at IS 'The last time the cached value was synced from the Identity DB';
+COMMENT ON COLUMN cached_group_members.source_updated_at IS 'The timestamp when the user information was last updated in the Identity DB, allowing for tracking of data order,freshness and assist with pipeline health monitoring';
 
 
 

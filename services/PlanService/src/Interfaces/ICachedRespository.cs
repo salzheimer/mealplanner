@@ -15,3 +15,10 @@ public interface ICachedGroupRepository
     Task<bool> UpdateAsync(CachedGroup group);
     Task<bool> DeleteAsync(Guid id);
 }
+public interface ICachedGroupMemberRepository
+{
+    Task<CachedGroupMember?> GetByIdAsync(Guid id);
+    Task<CachedGroupMember?> CreateAsync(CachedGroupMember groupMember);
+    Task<bool> UpdateAsync(CachedGroupMember groupMember);
+    Task<bool> DeleteAsync(Guid id);
+}

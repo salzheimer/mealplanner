@@ -17,9 +17,9 @@ services:
   #     interval: 10s
   #     timeout: 5s
   #     retries: 5
-  identity-db:
+  identity_db:
     image: postgres:17
-    container_name: identity-database-container
+    container_name: identity_database_container
     environment:
       POSTGRES_USER: mealplanner_user
       POSTGRES_PASSWORD: mealPlanner26!
@@ -34,9 +34,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-  meal-recipe-db:
+  meal_recipe_db:
     image: postgres:17
-    container_name: meal-recipe-database-container
+    container_name: meal_recipe_database_container
     environment:
       POSTGRES_USER: mealplanner_user
       POSTGRES_PASSWORD: mealPlanner26!
@@ -51,9 +51,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-  plan-db:
+  plan_db:
     image: postgres:17
-    container_name: plan-database-container
+    container_name: plan_database_container
     environment:
       POSTGRES_USER: mealplanner_user
       POSTGRES_PASSWORD: mealPlanner26!
@@ -68,15 +68,34 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5      
-  identity-service:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: mealplanner
+      RABBITMQ_DEFAULT_PASS: mealplanner
+    healthcheck:
+      # Use rabbitmq-diagnostics to verify the broker is fully up and running
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s # Gi
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq    
+  identity_service:
     build:
       context: ../..
       dockerfile: services/IdentityService/src/Dockerfile
     depends_on:
-      identity-db:
+      rabbitmq:
+        condition: service_healthy
+      identity_db:
         condition: service_healthy
     environment:
-      - ConnectionStrings__Identity=Host=identity-db;Port=5432;Database=identity_db;Username=mealplanner_user;Password=mealPlanner26!
+      - ConnectionStrings__Identity=Host=identity_db;Port=5432;Database=identity_db;Username=mealplanner_user;Password=mealPlanner26!
       - ASPNETCORE_URLS=http://+:80
       - ASPNETCORE_ENVIRONMENT=Development
       - ServiceApiKey=internal-service-key-replace-in-production
@@ -88,16 +107,17 @@ services:
       timeout: 5s
       retries: 5
 
-  meal-recipe-service:
+  meal_recipe_service:
     build:
       context: ../..
       dockerfile: services/MealRecipeService/src/Dockerfile
     depends_on:
       rabbitmq:
-      meal-recipe-db:
+        condition: service_healthy
+      meal_recipe_db:
         condition: service_healthy
     environment:
-      - ConnectionStrings__MealRecipe=Host=meal-recipe-db;Port=5432;Database=mealrecipe_db;Username=mealplanner_user;Password=mealPlanner26!
+      - ConnectionStrings__MealRecipe=Host=meal_recipe_db;Port=5432;Database=mealrecipe_db;Username=mealplanner_user;Password=mealPlanner26!
       - ASPNETCORE_URLS=http://+:80
       - ASPNETCORE_ENVIRONMENT=Development
       - ServiceApiKey=internal-service-key-replace-in-production
@@ -109,16 +129,17 @@ services:
       timeout: 5s
       retries: 5
 
-  plan-service:
+  plan_service:
     build:
       context: ../..
       dockerfile: services/PlanService/src/Dockerfile
     depends_on:
       rabbitmq:
+        condition: service_healthy
       plan_db:
         condition: service_healthy
     environment:
-      - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=mealplannerdb;Username=mealplanner_user;Password=mealPlanner26!
+      - ConnectionStrings__Postgres=Host=plan_db;Port=5432;Database=mealplannerdb;Username=mealplanner_user;Password=mealPlanner26!
       - ASPNETCORE_URLS=http://+:80
       - ASPNETCORE_ENVIRONMENT=Development
       - ServiceApiKey=internal-service-key-replace-in-production
@@ -130,16 +151,7 @@ services:
       timeout: 5s
       retries: 5
 
-  rabbitmq:
-  image: rabbitmq:3-management
-  ports:
-    - "5672:5672"
-    - "15672:15672"
-  environment:
-    RABBITMQ_DEFAULT_USER: mealplanner
-    RABBITMQ_DEFAULT_PASS: mealplanner
-  volumes:
-    - rabbitmq_data:/var/lib/rabbitmq
+  
   frontend:
     build:
       context: ../../frontend
@@ -147,11 +159,11 @@ services:
     ports:
       - "3000:80"
     depends_on:
-      auth-service:
+      identity_service:
         condition: service_healthy
-      meal-service:
+      meal_recipe_service:
         condition: service_healthy
-      plan-service:
+      plan_service:
         condition: service_healthy
     restart: unless-stopped
 

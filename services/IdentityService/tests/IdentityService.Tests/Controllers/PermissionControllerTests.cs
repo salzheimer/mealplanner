@@ -1,32 +1,30 @@
+using IdentityService.Contracts;
 using IdentityService.Controllers;
-using IdentityService.Models;
 using IdentityService.Interfaces;
+using IdentityService.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Shared.Models;
 using System.Security.Claims;
 using Xunit;
-using ResourceType = Shared.Models.ResourceType;
-using SubjectType = Shared.Models.SubjectType;
-using Permission = Shared.Models.Permission;
 
 namespace IdentityService.Tests.Controllers;
 
-public class PermissionControllerTests
+public class GroupControllerTests
 {
-    private readonly Mock<IResourcePermissionService> _permissionService;
-    private readonly PermissionController _controller;
-    private const int UserId = 1;
+    private readonly Mock<IGroupService> _groupService;
+    private readonly GroupController _controller;
+    private static readonly Guid UserId = Guid.NewGuid();
 
-    public PermissionControllerTests()
+    public GroupControllerTests()
     {
-        _permissionService = new Mock<IResourcePermissionService>();
-        _controller = new PermissionController(_permissionService.Object);
+        _groupService = new Mock<IGroupService>();
+        _controller = new GroupController(_groupService.Object);
         SetAuthenticatedUser(_controller, UserId);
     }
 
-    private static void SetAuthenticatedUser(ControllerBase controller, int userId)
+    private static void SetAuthenticatedUser(ControllerBase controller, Guid userId)
     {
         controller.ControllerContext = new ControllerContext
         {
@@ -40,136 +38,59 @@ public class PermissionControllerTests
         };
     }
 
-    private static ResourcePermissionDto MakePermission(int resourceId = 1) => new(
-        1L, ResourceType.Recipe, resourceId, SubjectType.User, 2, Permission.View, UserId
+    private static GroupResponse MakeGroup(Guid? groupId = null) => new(
+        groupId ?? Guid.NewGuid(), "Test Group", UserId, DateTimeOffset.UtcNow
     );
 
-    // --- GrantPermission ---
+    private static GroupMemberResponse MakeGroupMember(Guid groupId) => new(
+        Guid.NewGuid(), groupId, "Test Group", UserId, 1, "owner", 1, "active", null, DateTimeOffset.UtcNow, null
+    );
+
+    // --- CreateGroup ---
 
     [Fact]
-    public async Task GrantPermission_ValidRequest_Returns200WithPermission()
+    public async Task CreateGroup_ValidRequest_Returns200WithGroup()
     {
-        var createDto = new ResourcePermissionCreateDto(ResourceType.Recipe, 1, SubjectType.User, 2, Permission.View, UserId, null);
-        _permissionService.Setup(s => s.AddPermissionAsync(createDto))
-            .ReturnsAsync(Result<ResourcePermissionDto>.Success(MakePermission(1)));
+        var groupId = Guid.NewGuid();
+        var createDto = new CreateGroupRequest("Test Group");
+        _groupService.Setup(s => s.AddGroup(UserId,createDto))
+            .ReturnsAsync(Result<GroupResponse>.Success(MakeGroup(groupId)));
+        _groupService.Setup(s => s.AddGroupMember(UserId,It.IsAny<CreateGroupMemberRequest>()))
+            .ReturnsAsync(Result<GroupMemberResponse>.Success(MakeGroupMember(groupId)));
 
-        var result = await _controller.GrantPermission(createDto);
+        var result = await _controller.CreateGroup(createDto);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsType<ResourcePermissionDto>(ok.Value);
-        Assert.Equal(ResourceType.Recipe, value.ResourceType);
+        var value = Assert.IsType<GroupResponse>(ok.Value);
+        Assert.Equal(groupId, value.GroupId);
     }
 
     [Fact]
-    public async Task GrantPermission_ServiceFailure_Returns400()
+    public async Task CreateGroup_GroupCreationFails_Returns500()
     {
-        var createDto = new ResourcePermissionCreateDto(ResourceType.Recipe, 1, SubjectType.User, 2, Permission.View, UserId, null);
-        _permissionService.Setup(s => s.AddPermissionAsync(createDto))
-            .ReturnsAsync(Result<ResourcePermissionDto>.Failure(new Error("Permission.UnableToCreate", "Failed to create.", ErrorType.BadRequest)));
+        var createDto = new CreateGroupRequest("Test Group");
+        _groupService.Setup(s => s.AddGroup(UserId,createDto))
+            .ReturnsAsync(Result<GroupResponse>.Failure(GroupErrors.UnableToCreate));
 
-        var result = await _controller.GrantPermission(createDto);
+        var result = await _controller.CreateGroup(createDto);
 
-        Assert.IsType<BadRequestObjectResult>(result);
-    }
-
-    // --- GetResourcePermissions ---
-
-    [Fact]
-    public async Task GetResourcePermissions_ValidRequest_Returns200WithPermissions()
-    {
-        var permissions = new List<ResourcePermissionDto> { MakePermission(1) };
-        _permissionService.Setup(s => s.GetPermissionsForResourceAsync(ResourceType.Recipe, 1))
-            .ReturnsAsync(Result<IEnumerable<ResourcePermissionDto>>.Success(permissions));
-
-        var result = await _controller.GetResourcePermissions("Recipe", 1);
-
-        var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsAssignableFrom<IEnumerable<ResourcePermissionDto>>(ok.Value);
-        Assert.Single(value);
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, obj.StatusCode);
     }
 
     [Fact]
-    public async Task GetResourcePermissions_NoPermissions_Returns200WithEmptyList()
+    public async Task CreateGroup_OwnerAssignmentFails_Returns500()
     {
-        _permissionService.Setup(s => s.GetPermissionsForResourceAsync(ResourceType.Meal, 5))
-            .ReturnsAsync(Result<IEnumerable<ResourcePermissionDto>>.Success(new List<ResourcePermissionDto>()));
+        var groupId = Guid.NewGuid();
+        var createDto = new CreateGroupRequest("Test Group");
+        _groupService.Setup(s => s.AddGroup(UserId,createDto))
+            .ReturnsAsync(Result<GroupResponse>.Success(MakeGroup(groupId)));
+        _groupService.Setup(s => s.AddGroupMember(UserId,It.IsAny<CreateGroupMemberRequest>()))
+            .ReturnsAsync(Result<GroupMemberResponse>.Failure(GroupMemberErrors.UnableToCreate));
 
-        var result = await _controller.GetResourcePermissions("Meal", 5);
+        var result = await _controller.CreateGroup(createDto);
 
-        var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsAssignableFrom<IEnumerable<ResourcePermissionDto>>(ok.Value);
-        Assert.Empty(value);
-    }
-
-    [Fact]
-    public async Task GetResourcePermissions_InvalidResourceType_Returns400()
-    {
-        var result = await _controller.GetResourcePermissions("InvalidType", 1);
-
-        Assert.IsType<BadRequestObjectResult>(result);
-    }
-
-    // --- GetSubjectPermissions ---
-
-    [Fact]
-    public async Task GetSubjectPermissions_ValidRequest_Returns200WithPermissions()
-    {
-        var permissions = new List<ResourcePermissionDto> { MakePermission(1) };
-        _permissionService.Setup(s => s.GetPermissionsForSubjectAsync(SubjectType.User, 2))
-            .ReturnsAsync(Result<IEnumerable<ResourcePermissionDto>>.Success(permissions));
-
-        var result = await _controller.GetSubjectPermissions("User", 2);
-
-        var ok = Assert.IsType<OkObjectResult>(result);
-        var value = Assert.IsAssignableFrom<IEnumerable<ResourcePermissionDto>>(ok.Value);
-        Assert.Single(value);
-    }
-
-    [Fact]
-    public async Task GetSubjectPermissions_InvalidSubjectType_Returns400()
-    {
-        var result = await _controller.GetSubjectPermissions("InvalidType", 1);
-
-        Assert.IsType<BadRequestObjectResult>(result);
-    }
-
-    // --- RevokePermission ---
-
-    [Fact]
-    public async Task RevokePermission_Granter_Returns200()
-    {
-        var permission = MakePermission(1);
-        _permissionService.Setup(s => s.GetPermissionByIdAsync(1L))
-            .ReturnsAsync(Result<ResourcePermissionDto?>.Success(permission));
-        _permissionService.Setup(s => s.DeletePermissionAsync(1L))
-            .ReturnsAsync(Result<bool>.Success(true));
-
-        var result = await _controller.RevokePermission(1L);
-
-        var ok = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal(true, ok.Value);
-    }
-
-    [Fact]
-    public async Task RevokePermission_PermissionNotFound_Returns404()
-    {
-        _permissionService.Setup(s => s.GetPermissionByIdAsync(999L))
-            .ReturnsAsync(Result<ResourcePermissionDto?>.Success(null));
-
-        var result = await _controller.RevokePermission(999L);
-
-        Assert.IsType<NotFoundObjectResult>(result);
-    }
-
-    [Fact]
-    public async Task RevokePermission_NotGranter_Returns401()
-    {
-        var permission = new ResourcePermissionDto(1L, ResourceType.Recipe, 1, SubjectType.User, 2, Permission.View, GrantedBy: 99);
-        _permissionService.Setup(s => s.GetPermissionByIdAsync(1L))
-            .ReturnsAsync(Result<ResourcePermissionDto?>.Success(permission));
-
-        var result = await _controller.RevokePermission(1L);
-
-        Assert.IsType<UnauthorizedObjectResult>(result);
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, obj.StatusCode);
     }
 }
