@@ -40,11 +40,7 @@ public class GroupController : BaseController
 
         if (!newGroup.IsSuccess)
             return HandleResult(Result<GroupResponse>.Failure(GroupErrors.UnableToCreate));
-        // //assign group creator group owner role
-        // var groupOwner= new CreateGroupMemberRequest(GroupId:newGroup.Value.GroupId,UserId:authenticatedUserId.Value,GroupMemberRoleTypeName:"owner",GroupMemberStatusTypeName:"active");
-        // var ownerAdded= await _groupService.AddGroupMember(authenticatedUserId.Value,groupOwner);
-        // if(!ownerAdded.IsSuccess)
-        //     return HandleResult(Result<GroupMemberResponse>.Failure(GroupMemberErrors.UnableToCreate));
+        
         return HandleResult(Result<GroupResponse>.Success(newGroup.Value!));
     }
     [HttpGet("my-groups")]

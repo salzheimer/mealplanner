@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlanService.Interfaces;
+using PlanService.Contracts;
 using PlanService.Models;
 using Shared.Models;
 

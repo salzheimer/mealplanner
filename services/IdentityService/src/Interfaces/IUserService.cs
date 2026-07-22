@@ -1,3 +1,4 @@
+using IdentityService.Contracts;
 using Shared.Models;
 
 namespace IdentityService.Interfaces;

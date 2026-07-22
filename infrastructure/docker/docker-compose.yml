@@ -139,7 +139,7 @@ services:
       plan_db:
         condition: service_healthy
     environment:
-      - ConnectionStrings__Postgres=Host=plan_db;Port=5432;Database=mealplannerdb;Username=mealplanner_user;Password=mealPlanner26!
+      - ConnectionStrings__Plan=Host=plan_db;Port=5432;Database=plan_db;Username=mealplanner_user;Password=mealPlanner26!
       - ASPNETCORE_URLS=http://+:80
       - ASPNETCORE_ENVIRONMENT=Development
       - ServiceApiKey=internal-service-key-replace-in-production

@@ -1,3 +1,4 @@
+namespace IdentityService.Contracts;
 public record UpdateUserProfileRequest(
     Guid Id,
     string DisplayName

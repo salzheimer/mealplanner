@@ -1,3 +1,4 @@
+namespace PlanService.Contracts;
 public record PlanSummaryResponse(
     Guid Id,
     string? Name,

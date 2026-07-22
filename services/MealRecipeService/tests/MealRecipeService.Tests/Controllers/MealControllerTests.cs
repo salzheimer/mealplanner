@@ -240,6 +240,36 @@ public class MealControllerTests
         Assert.IsType<NotFoundObjectResult>(result);
     }
 
+    // --- MealsSharedWithMe ---
+
+    [Fact]
+    public async Task MealsSharedWithMe_HasSharedMeals_Returns200WithList()
+    {
+        var shared = new List<MealSummaryResponse>
+        {
+            new(MealId, "Monday Dinner", null, null, 1, false, UserId)
+        };
+        _mealService.Setup(s => s.GetMealsSharedWithMeAsync(UserId))
+            .ReturnsAsync(Result<IEnumerable<MealSummaryResponse>>.Success(shared));
+
+        var result = await _controller.MealsSharedWithMe();
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var value = Assert.IsAssignableFrom<IEnumerable<MealSummaryResponse>>(ok.Value);
+        Assert.Single(value);
+    }
+
+    [Fact]
+    public async Task MealsSharedWithMe_NoneShared_Returns404()
+    {
+        _mealService.Setup(s => s.GetMealsSharedWithMeAsync(UserId))
+            .ReturnsAsync(Result<IEnumerable<MealSummaryResponse>>.Failure(MealErrors.NotFound));
+
+        var result = await _controller.MealsSharedWithMe();
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
     // --- GetRecipes ---
 
     [Fact]

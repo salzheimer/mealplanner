@@ -42,21 +42,17 @@ public class GroupControllerTests
         groupId ?? Guid.NewGuid(), "Test Group", UserId, DateTimeOffset.UtcNow
     );
 
-    private static GroupMemberResponse MakeGroupMember(Guid groupId) => new(
-        Guid.NewGuid(), groupId, "Test Group", UserId, 1, "owner", 1, "active", null, DateTimeOffset.UtcNow, null
-    );
-
     // --- CreateGroup ---
+    // GroupService.AddGroup owns the full creation flow (group row + owner membership + event
+    // publishing) internally, so the controller only ever sees a single Result<GroupResponse>.
 
     [Fact]
     public async Task CreateGroup_ValidRequest_Returns200WithGroup()
     {
         var groupId = Guid.NewGuid();
         var createDto = new CreateGroupRequest("Test Group");
-        _groupService.Setup(s => s.AddGroup(UserId,createDto))
+        _groupService.Setup(s => s.AddGroup(UserId, createDto))
             .ReturnsAsync(Result<GroupResponse>.Success(MakeGroup(groupId)));
-        _groupService.Setup(s => s.AddGroupMember(UserId,It.IsAny<CreateGroupMemberRequest>()))
-            .ReturnsAsync(Result<GroupMemberResponse>.Success(MakeGroupMember(groupId)));
 
         var result = await _controller.CreateGroup(createDto);
 
@@ -66,10 +62,10 @@ public class GroupControllerTests
     }
 
     [Fact]
-    public async Task CreateGroup_GroupCreationFails_Returns500()
+    public async Task CreateGroup_ServiceFailure_Returns500()
     {
         var createDto = new CreateGroupRequest("Test Group");
-        _groupService.Setup(s => s.AddGroup(UserId,createDto))
+        _groupService.Setup(s => s.AddGroup(UserId, createDto))
             .ReturnsAsync(Result<GroupResponse>.Failure(GroupErrors.UnableToCreate));
 
         var result = await _controller.CreateGroup(createDto);
@@ -78,19 +74,30 @@ public class GroupControllerTests
         Assert.Equal(500, obj.StatusCode);
     }
 
+    // --- MyGroups ---
+
     [Fact]
-    public async Task CreateGroup_OwnerAssignmentFails_Returns500()
+    public async Task MyGroups_Success_Returns200WithGroups()
     {
-        var groupId = Guid.NewGuid();
-        var createDto = new CreateGroupRequest("Test Group");
-        _groupService.Setup(s => s.AddGroup(UserId,createDto))
-            .ReturnsAsync(Result<GroupResponse>.Success(MakeGroup(groupId)));
-        _groupService.Setup(s => s.AddGroupMember(UserId,It.IsAny<CreateGroupMemberRequest>()))
-            .ReturnsAsync(Result<GroupMemberResponse>.Failure(GroupMemberErrors.UnableToCreate));
+        var groups = new List<GroupResponse> { MakeGroup(), MakeGroup() };
+        _groupService.Setup(s => s.GetGroupsUserBelongs(UserId, UserId))
+            .ReturnsAsync(Result<IEnumerable<GroupResponse>>.Success(groups));
 
-        var result = await _controller.CreateGroup(createDto);
+        var result = await _controller.MyGroups();
 
-        var obj = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(500, obj.StatusCode);
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var value = Assert.IsAssignableFrom<IEnumerable<GroupResponse>>(ok.Value);
+        Assert.Equal(2, value.Count());
+    }
+
+    [Fact]
+    public async Task MyGroups_ServiceFailure_Returns404()
+    {
+        _groupService.Setup(s => s.GetGroupsUserBelongs(UserId, UserId))
+            .ReturnsAsync(Result<IEnumerable<GroupResponse>>.Failure(GroupErrors.NotFound));
+
+        var result = await _controller.MyGroups();
+
+        Assert.IsType<NotFoundObjectResult>(result);
     }
 }

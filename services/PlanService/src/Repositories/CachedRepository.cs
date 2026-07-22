@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using PlanService.Models;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace PlanService.Repositories;
@@ -11,7 +11,10 @@ public class CachedUserRepository : Interfaces.ICachedUserRepository
     {
         _context = context;
     }
-
+    public async Task<bool> AnyAsync()
+    {
+        return await _context.CachedUsers.AnyAsync();
+    }
 
     public async Task<CachedUser?> GetByIdAsync(Guid id)
     {
@@ -28,8 +31,12 @@ public class CachedUserRepository : Interfaces.ICachedUserRepository
 
     public async Task<bool> UpdateAsync(CachedUser user)
     {
-        _context.Entry(user).State = EntityState.Modified;
-        var result = await _context.SaveChangesAsync();
+        var result =  await _context.CachedUsers.Where(cu=>cu.Id ==user.Id)
+        .ExecuteUpdateAsync(s=>s.SetProperty(
+            cu=>cu.DisplayName, user.DisplayName
+        ).SetProperty(cu=> cu.SyncedAt, user.SyncedAt)
+        .SetProperty(cu=>cu.SourceUpdatedAt, user.SourceUpdatedAt));
+       
         return result > 0;
     }
 
@@ -56,7 +63,10 @@ public class CachedGroupRepository : Interfaces.ICachedGroupRepository
         return await _context.CachedGroups.FindAsync(id);
     }
 
-
+    public async Task<bool> AnyAsync()
+    {
+        return await _context.CachedGroups.AnyAsync();
+    }
 
     public async Task<CachedGroup?> CreateAsync(CachedGroup group)
     {
@@ -68,8 +78,12 @@ public class CachedGroupRepository : Interfaces.ICachedGroupRepository
 
     public async Task<bool> UpdateAsync(CachedGroup group)
     {
-        _context.Entry(group).State = EntityState.Modified;
-        var result = await _context.SaveChangesAsync();
+        var result = await _context.CachedGroups.Where(cg=>cg.Id ==group.Id)
+        .ExecuteUpdateAsync(s=>s.SetProperty(
+            cg=>cg.GroupName, group.GroupName
+        ).SetProperty(cg=> cg.SyncedAt, group.SyncedAt)
+        .SetProperty(cg=>cg.SourceUpdatedAt, group.SourceUpdatedAt));
+        
         return result > 0;
     }
 
@@ -90,7 +104,10 @@ public class CachedGroupMemberRepository : Interfaces.ICachedGroupMemberReposito
         _context = context;
     }
 
-
+    public async Task<bool> AnyAsync()
+    {
+        return await _context.CachedGroupMembers.AnyAsync();
+    }
     public async Task<CachedGroupMember?> GetByIdAsync(Guid id)
     {
         return await _context.CachedGroupMembers.FindAsync(id);

@@ -1,5 +1,6 @@
 using System.IO.Pipelines;
 using IdentityService.Interfaces;
+using IdentityService.Contracts;
 using IdentityService.Models;
 
 using Microsoft.AspNetCore.Mvc;

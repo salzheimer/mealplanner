@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Shared.Models;
 using Shared.Services;
 using IdentityService.Models;
+using IdentityService.Contracts;
 using IdentityService.Interfaces;
 using IdentityService.Services;
 using System.Security.Claims;

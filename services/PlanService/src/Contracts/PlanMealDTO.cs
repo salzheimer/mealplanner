@@ -1,3 +1,4 @@
+namespace PlanService.Contracts;
 public record PlanMealResponse(
     Guid Id,
     Guid MealId,

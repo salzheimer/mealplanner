@@ -1,4 +1,5 @@
 using IdentityService.Controllers;
+using IdentityService.Contracts;
 using IdentityService.Models;
 using IdentityService.Interfaces;
 using IdentityService.Services;

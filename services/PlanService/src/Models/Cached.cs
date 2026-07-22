@@ -13,6 +13,8 @@ public class CachedUser
     public string DisplayName { get; set; } = null!;
     [Column("synced_at")]
     public DateTimeOffset SyncedAt { get; set; }
+    [Column("source_updated_at")]
+    public DateTimeOffset SourceUpdatedAt {get;set;}
 }
 
 [Table("cached_groups")]

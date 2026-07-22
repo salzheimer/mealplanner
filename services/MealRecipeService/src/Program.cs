@@ -76,8 +76,6 @@ builder.Services.AddScoped<IMealItemRepository, MealItemRepository>();
 builder.Services.AddScoped<IMealTypeRepository, MealTypeRepository>();
 builder.Services.AddScoped<IMealItemTypeRepository, MealItemTypeRepository>();
 builder.Services.AddScoped<IResourcePermissionRepository, ResourcePermissionRepository>();
-builder.Services.AddScoped<ICachedUserRepository, CachedUserRepository>();
-builder.Services.AddScoped<ICachedGroupRepository, CachedGroupRepository>();
 builder.Services.AddScoped<IResourceTypeRepository, ResourceTypeRepository>();
 builder.Services.AddScoped<ISubjectTypeRepository, SubjectTypeRepository>();
 builder.Services.AddScoped<IPermissionTypeRepository, PermissionTypeRepository>();
