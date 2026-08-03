@@ -4,7 +4,7 @@ using MealRecipeService.Models;
 
 namespace MealRecipeService.Models;
 
-[Table("meal")]
+[Table("meals")]
 public class Meal
 {
     [Key]

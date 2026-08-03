@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MealRecipeService.Models;
 
-[Table("meal_item")]
+[Table("meal_items")]
 public class MealItem
 {
     [Key]

@@ -19,7 +19,7 @@ public class ResourcePermission
     public Guid SubjectId { get; set; }
     [Column("subject_type_id")]
     public int SubjectTypeId { get; set; }
-    [Column("granted_by_user_id")]
+    [Column("granted_by")]
     public Guid GrantedByUserId { get; set; }
     [Column("created_at")]
     public DateTimeOffset CreatedAt { get; set; }

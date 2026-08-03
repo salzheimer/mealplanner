@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MealRecipeService.Models;
-[Table("recipe_component")]
+[Table("recipe_components")]
 public class RecipeComponent
 {
    [Key]

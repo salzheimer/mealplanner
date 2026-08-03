@@ -7,7 +7,11 @@
       "launchBrowser": false,
       "applicationUrl": "http://localhost:5174",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ReverseProxy__Clusters__identity__Destinations__d1__Address": "http://localhost:5002",
+        "ReverseProxy__Clusters__meal__Destinations__d1__Address": "http://localhost:5003",
+        "ReverseProxy__Clusters__plan__Destinations__d1__Address": "http://localhost:5004",
+        "ReverseProxy__Clusters__bff__Destinations__d1__Address": "http://localhost:5005"
       }
     }
   }

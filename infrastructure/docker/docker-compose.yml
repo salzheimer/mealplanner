@@ -151,7 +151,50 @@ services:
       timeout: 5s
       retries: 5
 
-  
+  gateway_bff:
+    build:
+      context: ../..
+      dockerfile: services/GatewayBff/src/Dockerfile
+    depends_on:
+      meal_recipe_service:
+        condition: service_healthy
+      plan_service:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+      - ASPNETCORE_ENVIRONMENT=Development
+    ports:
+      - "5005:80"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api_gateway:
+    build:
+      context: ../..
+      dockerfile: services/ApiGateway/src/Dockerfile
+    depends_on:
+      identity_service:
+        condition: service_healthy
+      meal_recipe_service:
+        condition: service_healthy
+      plan_service:
+        condition: service_healthy
+      gateway_bff:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+      - ASPNETCORE_ENVIRONMENT=Development
+    ports:
+      - "5001:80"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   frontend:
     build:
       context: ../../frontend
@@ -159,11 +202,7 @@ services:
     ports:
       - "3000:80"
     depends_on:
-      identity_service:
-        condition: service_healthy
-      meal_recipe_service:
-        condition: service_healthy
-      plan_service:
+      api_gateway:
         condition: service_healthy
     restart: unless-stopped
 

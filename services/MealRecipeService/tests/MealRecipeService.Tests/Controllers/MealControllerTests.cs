@@ -61,6 +61,36 @@ public class MealControllerTests
         MealId, "meal", 1, "user", 2, "view", 1, SubjectId, UserId, null
     );
 
+    // --- GetAllMeals ---
+
+    [Fact]
+    public async Task GetAllMeals_HasMeals_Returns200WithList()
+    {
+        var meals = new List<MealSummaryResponse>
+        {
+            new(MealId, "Monday Dinner", null, null, 1, false, UserId)
+        };
+        _mealService.Setup(s => s.GetAllMealsAsync(UserId))
+            .ReturnsAsync(Result<IEnumerable<MealSummaryResponse>>.Success(meals));
+
+        var result = await _controller.GetAllMeals();
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var value = Assert.IsAssignableFrom<IEnumerable<MealSummaryResponse>>(ok.Value);
+        Assert.Single(value);
+    }
+
+    [Fact]
+    public async Task GetAllMeals_NoMeals_Returns404()
+    {
+        _mealService.Setup(s => s.GetAllMealsAsync(UserId))
+            .ReturnsAsync(Result<IEnumerable<MealSummaryResponse>>.Failure(MealErrors.NotFound));
+
+        var result = await _controller.GetAllMeals();
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
     // --- GetMeal ---
 
     [Fact]

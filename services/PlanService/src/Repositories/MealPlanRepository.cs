@@ -45,12 +45,16 @@ public class MealPlanRepository : IMealPlanRepository
 
     public async Task<IEnumerable<PlanMeal>> GetMealPlansByEndDateAsync(DateTime endDate)
     {
-        return await _context.MealPlans.Where(mp => mp.EndDate <= endDate).ToListAsync();
+        // EndDate is nullable (single-day meal plans have no end date) — fall back to
+        // ServeDate so those aren't silently excluded (NULL <= endDate is never true in SQL).
+        return await _context.MealPlans.Where(mp => (mp.EndDate ?? mp.ServeDate) <= endDate).ToListAsync();
     }
 
     public async Task<IEnumerable<PlanMeal>> GetMealPlansByDateRangeAsync(DateTime startDate, DateTime endDate)
     {
-        return await _context.MealPlans.Where(mp => mp.ServeDate >= startDate && mp.EndDate <= endDate).ToListAsync();
+        return await _context.MealPlans
+            .Where(mp => mp.ServeDate >= startDate && (mp.EndDate ?? mp.ServeDate) <= endDate)
+            .ToListAsync();
     }
     public async Task<bool> UpdateMealPlanAsync(PlanMeal mealPlan)
     {

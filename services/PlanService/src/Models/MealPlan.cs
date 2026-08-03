@@ -7,7 +7,7 @@ namespace PlanService.Models;
 public class PlanMeal
 {
     [Key]
-    [Column("meal_id")]
+    [Column("plan_meal_id")]
     public Guid Id { get; set; }
     [Column("plan_id")]
     public Guid PlanId { get; set; }

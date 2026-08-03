@@ -6,7 +6,7 @@ namespace MealRecipeService.Models;
 public class PermissionType
 {
    [Key]
-   [Column("permission_type_id")]
+   [Column("permission_id")]
    public int Id { get; set; }
    [Column("name")]  
    public string Name { get; set; } = string.Empty;

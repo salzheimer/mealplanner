@@ -8,6 +8,10 @@ builder.Services.AddHealthChecks();
 // Controllers
 builder.Services.AddControllers();
 
+// Reverse proxy — routes /api/* and /graphql to downstream services (see appsettings.json)
+builder.Services.AddReverseProxy()
+    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
+
 // OpenAPI metadata (used for contract generation tools like Scalar)
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
@@ -18,6 +22,7 @@ app.MapGet("/health", () => Results.Ok(new { status = "Healthy" }))
     .WithName("Health");
 
 app.MapControllers();
+app.MapReverseProxy();
 
 if (app.Environment.IsDevelopment())
 {
@@ -26,3 +31,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.Run();
+
+// Exposed for WebApplicationFactory<Program> in ApiGateway.Tests
+public partial class Program;

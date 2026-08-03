@@ -4,11 +4,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MealRecipeService.Models;
 
-[Table("meal_item_type")]
+[Table("item_types")]
 public class MealItemType
 {
    [Key]
-   [Column("meal_item_type_id")]
+   [Column("item_type_id")]
    public int Id { get; set; }
    [Column("name")]  
    public string Name { get; set; } = string.Empty;

@@ -23,6 +23,15 @@ public class MealController : BaseController
 
     // Meal endpoints
 
+    [HttpGet]
+    public async Task<IActionResult> GetAllMeals()
+    {
+        var userId = GetAuthenticatedUserId();
+        if (userId == null)
+            return HandleResult(Result<IEnumerable<MealSummaryResponse>>.Failure(MealErrors.Unauthorized));
+        return HandleResult(await _mealService.GetAllMealsAsync(userId.Value));
+    }
+
     [HttpGet("{id:Guid}")]
     public async Task<IActionResult> GetMeal(Guid id)
     {
